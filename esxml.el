@@ -1,0 +1,163 @@
+;;; esxml.el --- Library for working with esxml
+
+;; Copyright (C) 2012  
+
+;; Author:   Evan Izaksonas-Smith
+;; Keywords: tools, lisp, comm
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; 
+
+;;; Code:
+(require 'xml)
+
+(defun string-trim-whitespace (string)
+  "A simple function, strips the whitespace from beginning and
+end of the string.  Leaves all other whitespace untouched."
+  (replace-regexp-in-string
+   (rx string-start (* whitespace)
+       (group (+? anything))
+       (* whitespace) string-end)
+   "\\1"
+   string))
+
+(defun esxml-trim-ws (esxml)
+  "This may cause problems, is intended for parsing xml into sxml
+but may eroneously delete desirable white space."
+  (if (stringp esxml) (string-trim-whitespace esxml)
+    (destructuring-bind (tag attrs . body) esxml
+      `(,tag ,attrs
+             ,@(mapcar 'esxml-trim-ws body)))))
+
+(defun esxml--convert-pair (pair)
+  "Converts from cons cell to attribute pair.  Not intended for
+general use."
+  (format "%S=%S" (car pair) (cdr pair)))
+
+
+;; While the following could certainly have been written using format,
+;; concat makes them easier to read.  Update later if neccesary for
+;; efficiency.
+
+;; Though at first glance the recursive nature of this function might
+;; give one pause, since xml is a recursive data type, a recursive
+;; parser is an optimal strategy.  each node will be visited exactly
+;; once during the transformation.
+;;
+;; Further, since a string is a terminal node and since xml can be
+;; represented as a string, non dynamic portions of the page may be
+;; precached quite easily.
+(defun esxml-to-xml (esxml)
+  "This translates an esxml expression, i.e. that which is
+returned by xml-parse-region.  The structure is defined as a
+string or a list where the first element is the tag the second is
+an alist of attribute value pairs and the remainder of the list
+is 0 or more esxml elements."
+  (if (stringp esxml) esxml
+    (destructuring-bind (tag attrs . body) esxml
+      (concat "<" (symbol-name tag) " "
+              (if attrs
+                  (mapconcat 'esxml--convert-pair attrs " ")
+                "")
+              (if body
+                  (concat ">" (mapconcat 'esxml-to-xml body "")
+                          "</" (symbol-name tag) ">")
+                "/>")))))
+
+(defun pp-esxml-to-xml (esxml)
+  "This translates an esxml expresion as `esxml-to-xml' but
+indents it for ease of human readability, it is neccesarrily
+slower and will produce longer output."
+  (if (stringp esxml) esxml
+    (destructuring-bind (tag attrs . body) esxml
+      (concat "<" (symbol-name tag) " "
+              (if attrs
+                  (mapconcat 'esxml--convert-pair attrs " ")
+                "")
+              (if body
+                  (concat ">\n"
+                          (replace-regexp-in-string
+                           "^" "  "
+                           (mapconcat 'pp-esxml-to-xml
+                                      body "\n"))
+                          "\n</" (symbol-name tag) ">")
+                "/>")))))
+
+(defun sxml-to-esxml (sxml)
+  "Translates sxml to esxml so the common standard can be used.
+See: http://okmij.org/ftp/Scheme/SXML.html."
+  (if (stringp sxml) sxml
+    (pcase sxml
+      (`(,tag (@ . ,attrs) . ,body)
+       `(,tag ,(mapcar (lambda (attr)
+                         `(cons (first attr)
+                                (or (second attr)
+                                    (prin1-to-string (first attr)))))
+                       attrs)
+              ,@(mapcar 'sxml-to-esxml body)))
+      (`(,tag . ,body)
+       `(,tag nil
+              ,@(mapcar 'sxml-to-esxml body))))))
+
+(defun sxml-to-xml (sxml)
+  "Translates sxml to xml, via esxml, hey it's only a constant
+factor. :)"
+  (esxml-to-xml (sxml-to-esxml sxml)))
+
+(defun xml-to-esxml (string &optional trim)
+  (with-temp-buffer
+    (insert string)
+    (let ((parse-tree (libxml-parse-xml-region (point-min)
+                                               (point-max))))
+      (if trim
+          (esxml-trim-ws parse-tree)
+        parse-tree))))
+
+(defun esxml-get-by-key (esxml key value)
+  "Returns a list of all elements whose wttribute KEY match
+VALUE.  KEY should be a symbol, and VALUE should be a string.
+Will not recurse below a match."
+  (unless (stringp esxml)
+    (destructuring-bind (tag attrs . body) esxml 
+      (if (equal value
+                 (assoc-default key attrs))
+          (list esxml)
+        (apply 'append (mapcar (lambda (sexp)
+                                 (esxml-get-by-key sexp key value))
+                               body))))))
+
+(defun esxml-get-tags (esxml tags)
+  "Returns a list of all elements whose tag is a member of TAGS.
+TAGS should be a list of tags to be matched against. Will not
+recurse below a match."
+  (unless (stringp esxml) 
+    (let ((tag (car esxml))
+          (attrs (cadr esxml))
+          (body (cddr esxml)))
+      (if (member tag tags)
+          (list esxml)
+        (apply 'append (mapcar (lambda (sexp)
+                                 (esxml-get-tags sexp tags))
+                               body))))))
+
+(defun esxml-get-forms (esxml)
+  "Returns a list of all forms."
+  (esxml-get-tags esxml '(form)))
+
+(provide 'esxml)
+;;; esxml.el ends here
+
