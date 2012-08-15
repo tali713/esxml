@@ -1,0 +1,3 @@
+Read Me
+* TODO Write the rest of the read me file
+  Well, so that's the way it is.
