@@ -29,6 +29,20 @@ also includes tools for working with parsed xml
                       "Have been visited " ,(format "%s" count) " times since last started.")))))))
 #+END_SRC
 
+  This outputs the following HTML:
+
+#+BEGIN_SRC html
+<html>
+<body>
+<h1>Hello from Emacs!</h1>
+<br/>
+Trying to visit /somepath<br/>
+Have been visited 10 times since last started.
+</body>
+</html>
+#+END_SRC
+
+
 *** esxml example
 #+BEGIN_SRC elisp
   (let ((count 0))
