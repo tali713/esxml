@@ -8,7 +8,7 @@ also includes tools for working with parsed xml
   libxml-parse-xml-region and is used internally by emacs in many xml related
   libraries.
 
-#+begin_src elisp
+#+BEGIN_SRC elisp
     (let ((count 0))
       (defun esxml-demo (httpcon)
         (incf count)
@@ -29,5 +29,5 @@ also includes tools for working with parsed xml
                       (h1 "Hello from Emacs!") (br)
                       "Trying to visit " ,(format "%s" (elnode-http-pathinfo httpcon)) (br)
                       "Have been visited " ,(format "%s" count) " times since last started.")))))))
-#+end_src
+#+END_SRC
 
