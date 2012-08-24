@@ -8,19 +8,17 @@ also includes tools for working with parsed xml
   libxml-parse-xml-region and is used internally by emacs in many xml related
   libraries.
 
+** A brief example
+  The following is a very simple esxml document, paths are handled directly, via
+  a case statement.  While this is not good practice, this is meant to be a very
+  simple example.
+
+*** sxml example
 #+BEGIN_SRC elisp
     (let ((count 0))
-      (defun esxml-demo (httpcon)
+      (defun sxml-demo (httpcon)
         (incf count)
         (case (intern (elnode-http-pathinfo httpcon))
-          (/esxml.el (with-temp-buffer (insert-file (concat base-dir "/esxml/esxml.el" ))
-                                       (emacs-lisp-mode)
-                                       (or (ignore-errors (font-lock-fontify-buffer)
-                                                          (htmlfontify-buffer)
-                                                          (buffer-string))
-                                           (sxml-to-xml
-                                            `(html (body (pre ,(file-contents (locate-library "htmlfontify")))))))))
-    
           (/messages (with-current-buffer "*Messages*"
                        (sxml-to-xml `(html (body (pre ,(buffer-string)))))))
     
@@ -31,3 +29,24 @@ also includes tools for working with parsed xml
                       "Have been visited " ,(format "%s" count) " times since last started.")))))))
 #+END_SRC
 
+*** esxml example
+#+BEGIN_SRC elisp
+  (let ((count 0))
+    (defun esxml-demo (httpcon)
+      (incf count)
+      (case (intern (elnode-http-pathinfo httpcon))
+        (/messages (with-current-buffer "*Messages*"
+                     (esxml-to-xml `(html () (body () (pre () ,(buffer-string)))))))
+        
+        (t (esxml-to-xml
+            `(html ()
+                 (body ()
+                       (h1 () "Hello from Emacs!")
+                       (br) "Trying to visit " ,(format "%s" (elnode-http-pathinfo httpcon))
+                       (br) "Have been visited " ,(format "%s" count) " times since last started.")))))))
+#+END_SRC
+
+** Advanced examples to appear in this location
+
+* Extracting Data from XML
+  TODO
