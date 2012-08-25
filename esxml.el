@@ -104,9 +104,9 @@ See: http://okmij.org/ftp/Scheme/SXML.html."
     (pcase sxml
       (`(,tag (@ . ,attrs) . ,body)
        `(,tag ,(mapcar (lambda (attr)
-                         `(cons ,(first attr)
-                                ,(or (second attr)
-                                     (prin1-to-string (first attr)))))
+                         (cons (first attr)
+                               (or (second attr)
+                                   (prin1-to-string (first attr)))))
                        attrs)
               ,@(mapcar 'sxml-to-esxml body)))
       (`(,tag . ,body)
