@@ -15,18 +15,20 @@ also includes tools for working with parsed xml
 
 *** sxml example
 #+BEGIN_SRC elisp
-    (let ((count 0))
-      (defun sxml-demo (httpcon)
-        (incf count)
-        (case (intern (elnode-http-pathinfo httpcon))
-          (/messages (with-current-buffer "*Messages*"
-                       (sxml-to-xml `(html (body (pre ,(buffer-string)))))))
-    
-          (t (sxml-to-xml
-              `(html (body
-                      (h1 "Hello from Emacs!") (br)
-                      "Trying to visit " ,(format "%s" (elnode-http-pathinfo httpcon)) (br)
-                      "Have been visited " ,(format "%s" count) " times since last started.")))))))
+  (let ((count 0))
+    (defun sxml-demo (httpcon)
+      (incf count)
+      (case (intern (elnode-http-pathinfo httpcon))
+        (/messages (with-current-buffer "*Messages*"
+                     (sxml-to-xml `(html (body (pre ,(buffer-string)))))))
+  
+        (t (sxml-to-xml
+            `(html
+              (body
+               (h1 "Hello from Emacs!") (br)
+               "Trying to visit " ,(format "%s" (elnode-http-pathinfo httpcon)) (br)
+               "Visit " (a (@ (href "/messages")) "messages") " to see the *Messages* buffer." (br)
+               "Have been visited " ,(format "%s" count) " times since last started.")))))))
 #+END_SRC
 
   This outputs the following HTML:
@@ -54,10 +56,11 @@ Have been visited 10 times since last started.
         
         (t (esxml-to-xml
             `(html ()
-                 (body ()
-                       (h1 () "Hello from Emacs!")
-                       (br) "Trying to visit " ,(format "%s" (elnode-http-pathinfo httpcon))
-                       (br) "Have been visited " ,(format "%s" count) " times since last started.")))))))
+                   (body ()
+                         (h1 () "Hello from Emacs!")
+                         (br) "Trying to visit " ,(format "%s" (elnode-http-pathinfo httpcon))
+                         (br)  "Visit " (a ((href . "/messages")) "messages")  " to see the *Messages* buffer."
+                         (br) "Have been visited " ,(format "%s" count) " times since last started.")))))))
 #+END_SRC
 
 ** Advanced examples to appear in this location
