@@ -36,8 +36,8 @@ also includes tools for working with parsed xml
 #+BEGIN_SRC
 <html >
   <body >
-    <h1 >Hello from Emacs!</h1>
-    <br />Trying to visit /anywhere<br />
+    <h1 >Hello from Emacs!</h1><br />
+    Trying to visit /anywhere<br />
     Visit <a href="/messages">messages</a> to see the *Messages* buffer.<br />
     Have been visited 1 times since last started.
   </body>
