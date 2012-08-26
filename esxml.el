@@ -3,6 +3,9 @@
 ;; Copyright (C) 2012  
 
 ;; Author:   Evan Izaksonas-Smith
+;; Maintainer: Evan Izaksonas-Smith
+;; Created: 15th August 2012
+;; Version: 0.0.1
 ;; Keywords: tools, lisp, comm
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -20,7 +23,8 @@
 
 ;;; Commentary:
 
-;; 
+;; This is XML/XHTML done with S-Expressions in EmacsLisp.  Simply,
+;; this is the easiest way to write HTML or XML in Lisp.
 
 ;;; Code:
 (require 'xml)
@@ -160,4 +164,3 @@ recurse below a match."
 
 (provide 'esxml)
 ;;; esxml.el ends here
-
