@@ -7,7 +7,8 @@
 ;; Created: 15th August 2012
 ;; Version: 0.0.1
 ;; Keywords: tools, lisp, comm
-
+;; Description: A library for easily generating XML/XHTML in elisp
+;;
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
@@ -27,6 +28,7 @@
 ;; this is the easiest way to write HTML or XML in Lisp.
 
 ;;; Code:
+(require 'cl)
 (require 'xml)
 
 (defun string-trim-whitespace (string)
