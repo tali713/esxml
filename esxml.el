@@ -1,4 +1,4 @@
-;;; esxml.el --- Library for working with esxml
+;;; esxml.el --- Library for working with xml via esxml and sxml
 
 ;; Copyright (C) 2012  
 
