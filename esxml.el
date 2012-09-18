@@ -2,10 +2,10 @@
 
 ;; Copyright (C) 2012  
 
-;; Author:   Evan Izaksonas-Smith
+;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.0.1
+;; Version: 0.0.4
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
 ;;
@@ -141,9 +141,10 @@ factor. :)"
 (defun esxml-link (url name)
   `(a ((href . ,url)) ,name))
 
-(defun esxml-listify (esxml-body &optional ordered-p)
-  `(,(if ordered-p 'ol 'ul) ()
-    ,@(mapcar (lambda (body) `(li () ,@body)) esxml-body)))
+;; highly recommended that you add (defalias 'restructuring-map
+;; 'esxml-restructuring-map) if you intend to use this in your own
+;; code.  I have not yet decided whether args and sexp should be
+;; enclose in parens.  Please send me feedback.
 
 (defmacro esxml-restructuring-map (args sexp seq)
   "A hybrid of `destructuring-bind' and `mapcar'
@@ -154,17 +155,22 @@ used for structural transformations, so the expected usage will
 be that ARGS describes the structure of the items in SEQ, and
 SEXP will describe the structure desired."
   (declare (indent 2))
-  (let ((entry (cl-gensym)))
+  (let ((entry (gensym)))
     `(mapcar (lambda (,entry)
                (destructuring-bind ,args ,entry ,sexp))
              ,seq)))
 
+(defun esxml-listify (body &optional ordered-p)
+  `(,(if ordered-p 'ol 'ul) ()
+    ,@(esxml-restructuring-map body
+          `(li () ,@body)
+        body)))
 
 (defun esxml-create-bookmark-list (bookmark-list seperator &optional ordered-p)
   (esxml-listify (esxml-restructuring-map (url name &optional description)
-                     (if description
-                         (list (esxml-link url name) seperator description)
-                       (list (esxml-link url name)))
+                     `(,(esxml-link url name)
+                       ,@(when description
+                           `(,seperator ,description)))
                    bookmark-list)
                  ordered-p))
 ;;; Example
