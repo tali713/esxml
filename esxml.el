@@ -124,6 +124,59 @@ See: http://okmij.org/ftp/Scheme/SXML.html."
 factor. :)"
   (esxml-to-xml (sxml-to-esxml sxml)))
 
+
+;;; Some generators for common problems
+;; Tabular and listed data are common patterns, so rather than do
+;; something like:
+;; (esxml-to-xml
+;;  `(html ()
+;;         (body ()
+;;               ,@(mapcar (lambda (url-entry)
+;;                           (destructuring-bind (url name)
+;;                               `(li ()
+;;                                    (a ((href . ,url))
+;;                                       ,name))))))))
+;; we should instead define this cleanly.
+
+(defun esxml-link (url name)
+  `(a ((href . ,url)) ,name))
+
+(defun esxml-listify (esxml-body &optional ordered-p)
+  `(,(if ordered-p 'ol 'ul) ()
+    ,@(mapcar (lambda (body) `(li () ,@body)) esxml-body)))
+
+(defmacro esxml-restructuring-map (args sexp seq)
+  "A hybrid of `destructuring-bind' and `mapcar'
+ARGS shall be of the form used with `destructuring-bind'
+
+Unlike most other mapping forms this is a macro intended to be
+used for structural transformations, so the expected usage will
+be that ARGS describes the structure of the items in SEQ, and
+SEXP will describe the structure desired."
+  (declare (indent 2))
+  (let ((entry (cl-gensym)))
+    `(mapcar (lambda (,entry)
+               (destructuring-bind ,args ,entry ,sexp))
+             ,seq)))
+
+
+(defun esxml-create-bookmark-list (bookmark-list seperator &optional ordered-p)
+  (esxml-listify (esxml-restructuring-map (url name &optional description)
+                     (if description
+                         (list (esxml-link url name) seperator description)
+                       (list (esxml-link url name)))
+                   bookmark-list)
+                 ordered-p))
+;;; Example
+;; (setq bookmark-list
+;;       '(("http://www.emacswiki.org" "Emacs Wiki" "Accept no substitutes")
+;;         ("http://www.github.com/" "Github")
+;;         ("http://www.google.com" "Google" "Everyones favorite search engine")))
+
+;; (esxml-to-xml (esxml-create-bookmark-list bookmark-list ": "))
+
+
+
 (defun xml-to-esxml (string &optional trim)
   (with-temp-buffer
     (insert string)
