@@ -1,11 +1,11 @@
 ;;; esxml.el --- Library for working with xml via esxml and sxml
-
 ;; Copyright (C) 2012  
 
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.0.5
+;; Version: 0.0.7
+;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
 ;;
@@ -28,7 +28,8 @@
 ;; this is the easiest way to write HTML or XML in Lisp.
 
 ;;; Code:
-(require 'cl)
+(eval-when-compile
+  (require 'cl))
 (require 'xml)
 (require 'kv)
 
