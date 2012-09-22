@@ -5,7 +5,7 @@
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.0.4
+;; Version: 0.0.5
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
 ;;
@@ -30,6 +30,7 @@
 ;;; Code:
 (require 'cl)
 (require 'xml)
+(require 'kv)
 
 (defun string-trim-whitespace (string)
   "A simple function, strips the whitespace from beginning and
@@ -141,37 +142,20 @@ factor. :)"
 (defun esxml-link (url name)
   `(a ((href . ,url)) ,name))
 
-;; highly recommended that you add (defalias 'restructuring-map
-;; 'esxml-restructuring-map) if you intend to use this in your own
-;; code.  I have not yet decided whether args and sexp should be
-;; enclose in parens.  Please send me feedback.
 
-(defmacro esxml-restructuring-map (args sexp seq)
-  "A hybrid of `destructuring-bind' and `mapcar'
-ARGS shall be of the form used with `destructuring-bind'
-
-Unlike most other mapping forms this is a macro intended to be
-used for structural transformations, so the expected usage will
-be that ARGS describes the structure of the items in SEQ, and
-SEXP will describe the structure desired."
-  (declare (indent 2))
-  (let ((entry (gensym)))
-    `(mapcar (lambda (,entry)
-               (destructuring-bind ,args ,entry ,sexp))
-             ,seq)))
 
 (defun esxml-listify (body &optional ordered-p)
   `(,(if ordered-p 'ol 'ul) ()
-    ,@(esxml-restructuring-map body
-          `(li () ,@body)
-        body)))
+    ,@(map-bind body
+                `(li () ,@body)
+                body)))
 
 (defun esxml-create-bookmark-list (bookmark-list seperator &optional ordered-p)
-  (esxml-listify (esxml-restructuring-map (url name &optional description)
-                     `(,(esxml-link url name)
-                       ,@(when description
-                           `(,seperator ,description)))
-                   bookmark-list)
+  (esxml-listify (map-bind (url name &optional description)
+                           `(,(esxml-link url name)
+                             ,@(when description
+                                 `(,seperator ,description)))
+                           bookmark-list)
                  ordered-p))
 ;;; Example
 ;; (setq bookmark-list
