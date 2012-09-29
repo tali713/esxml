@@ -1,13 +1,14 @@
-;;; esxml.el --- Library for working with esxml
-
+;;; esxml.el --- Library for working with xml via esxml and sxml
 ;; Copyright (C) 2012  
 
-;; Author:   Evan Izaksonas-Smith
+;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.0.1
+;; Version: 0.0.7
+;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
-
+;; Description: A library for easily generating XML/XHTML in elisp
+;;
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
@@ -27,7 +28,10 @@
 ;; this is the easiest way to write HTML or XML in Lisp.
 
 ;;; Code:
+(eval-when-compile
+  (require 'cl))
 (require 'xml)
+(require 'kv)
 
 (defun string-trim-whitespace (string)
   "A simple function, strips the whitespace from beginning and
@@ -123,6 +127,48 @@ See: http://okmij.org/ftp/Scheme/SXML.html."
   "Translates sxml to xml, via esxml, hey it's only a constant
 factor. :)"
   (esxml-to-xml (sxml-to-esxml sxml)))
+
+
+;;; Some generators for common problems
+;; Tabular and listed data are common patterns, so rather than do
+;; something like:
+;; (esxml-to-xml
+;;  `(html ()
+;;         (body ()
+;;               ,@(mapcar (lambda (url-entry)
+;;                           (destructuring-bind (url name)
+;;                               `(li ()
+;;                                    (a ((href . ,url))
+;;                                       ,name))))))))
+;; we should instead define this cleanly.
+
+(defun esxml-link (url name)
+  `(a ((href . ,url)) ,name))
+
+
+
+(defun esxml-listify (body &optional ordered-p)
+  `(,(if ordered-p 'ol 'ul) ()
+    ,@(map-bind body
+                `(li () ,@body)
+                body)))
+
+(defun esxml-create-bookmark-list (bookmark-list seperator &optional ordered-p)
+  (esxml-listify (map-bind (url name &optional description)
+                           `(,(esxml-link url name)
+                             ,@(when description
+                                 `(,seperator ,description)))
+                           bookmark-list)
+                 ordered-p))
+;;; Example
+;; (setq bookmark-list
+;;       '(("http://www.emacswiki.org" "Emacs Wiki" "Accept no substitutes")
+;;         ("http://www.github.com/" "Github")
+;;         ("http://www.google.com" "Google" "Everyones favorite search engine")))
+
+;; (esxml-to-xml (esxml-create-bookmark-list bookmark-list ": "))
+
+
 
 (defun xml-to-esxml (string &optional trim)
   (with-temp-buffer
