@@ -76,10 +76,12 @@ string or a list where the first element is the tag the second is
 an alist of attribute value pairs and the remainder of the list
 is 0 or more esxml elements."
   (if (stringp esxml) esxml
-    (destructuring-bind (tag attrs . body) esxml
-      (concat "<" (symbol-name tag) " "
+    (destructuring-bind (tag attrs &rest body) esxml
+      (concat "<" (symbol-name tag)
               (if attrs
-                  (mapconcat 'esxml--convert-pair attrs " ")
+                  (concat
+                   " "
+                   (mapconcat 'esxml--convert-pair attrs " "))
                 "")
               (if body
                   (concat ">" (mapconcat 'esxml-to-xml body "")
@@ -143,6 +145,22 @@ factor. :)"
 (defun esxml-link (url name)
   `(a ((href . ,url)) ,name))
 
+(defun esxml-label (label-text &optional body)
+  "Make a label with LABEL-TEXT.
+
+Optionally include the BODY."
+  (let ((label-element
+         `(label
+           ()
+           ,(concat label-text ": "))))
+    (if body
+        (append label-element (list body))
+        label-element)))
+
+(defun esxml-input (name type)
+  "Make an HTML INPUT control."
+  (list 'input (list (cons 'name name)
+                     (cons 'type type))))
 
 
 (defun esxml-listify (body &optional ordered-p)
