@@ -75,7 +75,9 @@ is 0 or more esxml elements."
     (destructuring-bind (tag attrs &rest body) esxml
       (concat "<" (symbol-name tag) " "
               (if attrs
-                  (mapconcat 'esxml--convert-pair attrs " ")
+                  (concat
+                   " "
+                   (mapconcat 'esxml--convert-pair attrs " "))
                 "")
               (if body
                   (concat ">" (mapconcat 'esxml-to-xml body "")
