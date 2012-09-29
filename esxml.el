@@ -72,7 +72,7 @@ string or a list where the first element is the tag the second is
 an alist of attribute value pairs and the remainder of the list
 is 0 or more esxml elements."
   (if (stringp esxml) esxml
-    (destructuring-bind (tag attrs . body) esxml
+    (destructuring-bind (tag attrs &rest body) esxml
       (concat "<" (symbol-name tag) " "
               (if attrs
                   (mapconcat 'esxml--convert-pair attrs " ")
