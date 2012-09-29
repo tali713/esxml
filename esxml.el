@@ -145,6 +145,22 @@ factor. :)"
 (defun esxml-link (url name)
   `(a ((href . ,url)) ,name))
 
+(defun esxml-label (label-text &optional body)
+  "Make a label with LABEL-TEXT.
+
+Optionally include the BODY."
+  (let ((label-element
+         `(label
+           ()
+           ,(concat label-text ": "))))
+    (if body
+        (append label-element (list body))
+        label-element)))
+
+(defun esxml-input (name type)
+  "Make an HTML INPUT control."
+  (list 'input (list (cons 'name name)
+                     (cons 'type type))))
 
 
 (defun esxml-listify (body &optional ordered-p)
