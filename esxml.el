@@ -161,9 +161,9 @@ VALUE is optional, if it's supplied whatever is supplied is used.
 
 (defun esxml-textarea (name &optional content)
   "Make an HTML TextArea control."
-  `(textarea
-    ((name . ,name)
-     ,@(when content `((content . ,content))))))
+  `(textarea ((name . ,name))
+             ,@(or content nil))) ;; this may be incorrect, textareas
+                                  ;; /may/ require a body
 
 (defun esxml-listify (body &optional ordered-p)
   `(,(if ordered-p 'ol 'ul) ()
