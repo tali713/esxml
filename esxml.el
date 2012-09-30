@@ -141,19 +141,33 @@ factor. :)"
 (defun esxml-link (url name)
   `(a ((href . ,url)) ,name))
 
-(defun esxml-label (label-text &optional body)
+(defun esxml-label (label-text &rest body)
   "Make a label with LABEL-TEXT.
 
 Optionally include the BODY."
   (let ((label-element `(label () ,(concat label-text ": "))))
     (if body
-        (append label-element (list body))
+        (append label-element body)
         label-element)))
 
-(defun esxml-input (name type)
-  "Make an HTML INPUT control."
-  (list 'input (list (cons 'name name)
-                     (cons 'type type))))
+(defun esxml-input (name type &optional value)
+  "Make an HTML INPUT control.
+
+VALUE is optional, if it's supplied whatever is supplied is used.
+`nil' is the blank string."
+  (list 'input
+        (append
+         (list (cons 'name name)
+               (cons 'type type))
+         (when value
+           (list (cons 'value value))))))
+
+(defun esxml-textarea (name &optional content)
+  "Make an HTML TextArea control."
+  (list 'textarea
+        (append (list (cons 'name name))
+                (when content
+                  (list (cons 'content content))))))
 
 
 (defun esxml-listify (body &optional ordered-p)
