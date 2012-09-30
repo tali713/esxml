@@ -78,11 +78,8 @@ is 0 or more esxml elements."
   (if (stringp esxml) esxml
     (destructuring-bind (tag attrs &rest body) esxml
       (concat "<" (symbol-name tag)
-              (if attrs
-                  (concat
-                   " "
-                   (mapconcat 'esxml--convert-pair attrs " "))
-                "")
+              (when attrs
+                (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
               (if body
                   (concat ">" (mapconcat 'esxml-to-xml body "")
                           "</" (symbol-name tag) ">")
@@ -95,9 +92,8 @@ slower and will produce longer output."
   (if (stringp esxml) esxml
     (destructuring-bind (tag attrs . body) esxml
       (concat "<" (symbol-name tag) " "
-              (if attrs
-                  (mapconcat 'esxml--convert-pair attrs " ")
-                "")
+              (when attrs
+                  (mapconcat 'esxml--convert-pair attrs " "))
               (if body
                   (concat ">\n"
                           (replace-regexp-in-string
@@ -149,10 +145,7 @@ factor. :)"
   "Make a label with LABEL-TEXT.
 
 Optionally include the BODY."
-  (let ((label-element
-         `(label
-           ()
-           ,(concat label-text ": "))))
+  (let ((label-element `(label () ,(concat label-text ": "))))
     (if body
         (append label-element (list body))
         label-element)))
