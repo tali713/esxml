@@ -157,10 +157,21 @@ Optionally include the BODY."
         (append label-element (list body))
         label-element)))
 
-(defun esxml-input (name type)
-  "Make an HTML INPUT control."
+(defun esxml-input (name type &optional value)
+  "Make an HTML INPUT control.
+
+VALUE is optional, if it's supplied whatever is supplied is used.
+`nil' is the blank string."
   (list 'input (list (cons 'name name)
-                     (cons 'type type))))
+                     (cons 'type type)
+                     (when value
+                       (cons 'value value)))))
+
+(defun esxml-textarea (name &optional content)
+  "Make an HTML TextArea control."
+  (list 'textarea (list (cons 'name name)
+                        (when content
+                          (cons 'content content)))))
 
 
 (defun esxml-listify (body &optional ordered-p)
