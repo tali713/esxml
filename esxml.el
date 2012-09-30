@@ -155,20 +155,15 @@ Optionally include the BODY."
 
 VALUE is optional, if it's supplied whatever is supplied is used.
 `nil' is the blank string."
-  (list 'input
-        (append
-         (list (cons 'name name)
-               (cons 'type type))
-         (when value
-           (list (cons 'value value))))))
+  `(input ((name . ,name)
+           (type . ,type)
+           ,@(when value `((value . ,value))))))
 
 (defun esxml-textarea (name &optional content)
   "Make an HTML TextArea control."
-  (list 'textarea
-        (append (list (cons 'name name))
-                (when content
-                  (list (cons 'content content))))))
-
+  `(textarea
+    ((name . ,name)
+     ,@(when content `((content . ,content))))))
 
 (defun esxml-listify (body &optional ordered-p)
   `(,(if ordered-p 'ol 'ul) ()
