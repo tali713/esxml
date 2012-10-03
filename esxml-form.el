@@ -52,11 +52,12 @@
     db-check)
   "The Lisp definition used for a field.")
 
-(defmacro* esxml-form-field-set ((&key db db-key) &rest field-args)
+(defmacro* esxml-form ((&key db db-key) &rest field-args)
   "Make a field set.
 
 A field set binds some field parameters together with some other
 data, for example, a database."
+  (declare (indent 0))
   (let ((fields (make-symbol "fieldsv")))
     `(let ((,fields
             (map-bind ;; FIXME optional fields?
@@ -73,8 +74,18 @@ data, for example, a database."
              :db-key (quote ,db-key)
              :fields ,fields))))
 
-(defun esxml-form-field-set-fields (fs)
+(defun esxml-form-fields (fs)
   (plist-get fs :fields))
+
+(defun esxml-form-db (fs)
+  (symbol-value (plist-get fs :db)))
+
+(defmacro esxml-form-bind (body form)
+  "Bind BODY successively to FORMS fields."
+  `(map-bind
+    ,esxml-form-field-defn
+    ,body
+    (esxml-form-fields ,form)))
 
 
 ;; Verification stuff
@@ -82,22 +93,30 @@ data, for example, a database."
 (defvar esxml-form-field-set-email-verify-re
   "[a-zA-Z0-9-]+@[a-zA-Z0-9.-]+\\(.com\\|.net\\|.org\\)$")
 
-(defun esxml-form-field-set--validity-check (field value)
-  "Do a validity check on the FIELD."
-  (case (plist-get field :type)
-    (:regex
-     (equal
-      0
-      (string-match
-       (plist-get field :regex)
-       (or value ""))))
-    (:email
-     (string-match esxml-form-field-set-email-verify-re value))
-    (:password
-     ;; really? is this a verification?
-     t)))
+(defun esxml--field-db-check (value db query)
+  (not (db-query db (subs-all value '$ query))))
 
-(defun esxml-form-field-set-check (fs params)
+(defun esxml--field-check (field value &optional db query)
+  "Do a validity check on the FIELD."
+  (let ((validity
+         (case (plist-get field :type)
+           (:regex
+            (equal
+             0
+             (string-match
+              (plist-get field :regex)
+              (or value ""))))
+           (:email
+            (string-match esxml-form-field-set-email-verify-re value))
+           (:password
+            ;; really? is this a verification?
+            t))))
+    ;; FIXME could we return different validity messages?
+    (if (and validity db query)
+        (esxml--field-db-check value db query)
+        validity)))
+
+(defun esxml-field-set-check (fs params)
   "Check field set FS against the PARAMS values.
 
 Checks that ALL the required fields are there and that any field
@@ -105,20 +124,26 @@ that is there is correclty specified.
 
 Returns the empty list when it passes and an alist of field,
 errors if it fails."
-  (loop
-     with field-value
-     for (field-name . field-plist) in (esxml-form-field-set-fields fs)
-     unless
-       (esxml-form-field-set--validity-check
-        field-plist
-        (setq field-value (cdr (kvassoqc field-name params))))
-     collect (list ; return the error structure
-              field-name
-              field-value
-              (plist-get field-plist :type-check-failure))))
+  (flet ((subs-all (new old lst)
+           (let ((l (lambda (e) (if (listp e) (subs-all new old e) e))))
+             (substitute new old (mapcar l lst)))))
+    (let* ((db (esxml-form-db fs))
+           (fields-set (esxml-form-fields fs)))
+      (loop with field-value
+         for (field-name . field-plist) in fields-set
+         do
+           (setq field-value (cdr (kvassoqc field-name params)))
+         unless
+           (esxml--field-check
+            field-plist field-value
+            db (when db (plist-get field-plist :db-check)))
+         collect (list ; return the error structure
+                  field-name
+                  field-value
+                  (plist-get field-plist :type-check-failure))))))
 
-(defun esxml-form-field-set->esxml (fs &optional params)
-  "Fieldset FS to ESXML description of fields.
+(defun esxml-field-set->esxml (form &optional params errors)
+  "Fieldset of FORM to ESXML description of fields.
 
 PARAMS, if supplied, is an ALIST of field-names -> value bindings
 which are used to validate the fields and assigned to the
@@ -129,35 +154,37 @@ style (an HTML LABEL element contains the controls).
 
 If validation errors occur they are output as a DIV with class
 \"error\", again, inside the LABEL."
-  (let ((errors (when params
-                  (esxml-form-field-set-check fs params))))
-    (destructuring-bind (field-name &rest field-plist) fs
-      `(fieldset
-        ()
-        ,@(eval
-           `(map-bind
-             ,esxml-form-field-defn
-             (let* ((symname (symbol-name name))
-                    (value (aget params symname))
-                    (err (aget errors name)))
-               (apply
-                'esxml-label
-                (cons
-                 symname
-                 (cons
-                  (case html
-                    (:text (esxml-input symname "text" value))
-                    (:password (esxml-input symname "password" value))
-                    (:checkbox (esxml-input symname "checkbox" value))
-                    (:radio (esxml-input symname "radio" value))
-                    ;;(:select (esxml-select (symbol-name name)))
-                    (:textarea (esxml-textarea symname value)))
-                  (when err
-                    (list
-                     `(div
-                       ((class . "error"))
-                       ,(elt err 1))))))))
-             (esxml-form-field-set-fields fs)))))))
+  `(fieldset
+    ()
+    ,@(esxml-form-bind
+       (let* ((symname (symbol-name name))
+              (value (aget params symname))
+              (err (aget errors name)))
+         (apply
+          'esxml-label
+          (cons
+           symname
+           (cons
+            (case html
+              (:text (esxml-input symname "text" value))
+              (:password (esxml-input symname "password" value))
+              (:checkbox (esxml-input symname "checkbox" value))
+              (:radio (esxml-input symname "radio" value))
+              ;;(:select (esxml-select (symbol-name name)))
+              (:textarea (esxml-textarea symname value)))
+            (when err
+              (list
+               `(div
+                 ((class . "error"))
+                 ,(elt err 1)))))))) form)))
+
+(defun esxml-form-save (form params)
+  "Save the specified PARAMS in the FORM in the attached DB."
+  (let ((db (esxml-form-db form))
+        (db-key (plist-get form :db-key)))
+    (when (and db db-key)
+      (let ((key-value (aget params db-key)))
+        (db-put key-value params db)))))
 
 (provide 'esxml-form)
 
