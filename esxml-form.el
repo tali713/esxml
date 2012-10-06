@@ -47,6 +47,7 @@
     ;; example, :checkbox_selected could be used
     ;; for the checkbox
     (html :text)
+    (check-failure "the content of the field was wrong")
     (type-check-failure "the content of the field was wrong")
     db-key
     db-check)
@@ -65,6 +66,7 @@ data, for example, a database."
              (list name
                    :type type
                    :regex regex
+                   :check-failure check-failure
                    :type-check-failure type-check-failure
                    :html html
                    :db-check db-check
@@ -93,54 +95,77 @@ data, for example, a database."
 (defvar esxml-form-field-set-email-verify-re
   "[a-zA-Z0-9-]+@[a-zA-Z0-9.-]+\\(.com\\|.net\\|.org\\)$")
 
-(defun esxml--field-db-check (value db query)
-  (not (db-query db (subs-all value '$ query))))
-
 (defun esxml--field-check (field value &optional db query)
-  "Do a validity check on the FIELD."
-  (let ((validity
-         (case (plist-get field :type)
-           (:regex
-            (equal
-             0
-             (string-match
-              (plist-get field :regex)
-              (or value ""))))
-           (:email
-            (string-match esxml-form-field-set-email-verify-re value))
-           (:password
-            ;; really? is this a verification?
-            t))))
-    ;; FIXME could we return different validity messages?
-    (if (and validity db query)
-        (esxml--field-db-check value db query)
-        validity)))
+  "Do a validity check on the FIELD.
 
-(defun esxml-field-set-check (fs params)
+Return the type of validation failure or `nil' for no failure.
+
+The tyoe of validation failure can be used as a key into the
+field's `:check-failure' alist (if it is a list).  This means the
+form can respond differently about database validation or other
+types of validation."
+  (let* ((field-type (plist-get field :type))
+         (valid
+          (case field-type
+            (:regex
+             (equal
+              0
+              (string-match
+               (plist-get field :regex)
+               (or value ""))))
+            (:email
+             (string-match esxml-form-field-set-email-verify-re value))
+            (:password
+             ;; really? is this a verification?
+             t))))
+    (if (and valid db query)
+        (when (db-query db query) :db-check)
+        (unless valid field-type))))
+
+(defun* esxml-field-set-check (fs params
+                                  &key
+                                  onerror
+                                  onsuccess)
   "Check field set FS against the PARAMS values.
 
 Checks that ALL the required fields are there and that any field
 that is there is correclty specified.
 
-Returns the empty list when it passes and an alist of field,
-errors if it fails."
+Returns the empty list when it passes and an alist of field-name,
+field-value and validation error message if it fails."
   (flet ((subs-all (new old lst)
            (let ((l (lambda (e) (if (listp e) (subs-all new old e) e))))
              (substitute new old (mapcar l lst)))))
-    (let* ((db (esxml-form-db fs))
-           (fields-set (esxml-form-fields fs)))
-      (loop with field-value
-         for (field-name . field-plist) in fields-set
-         do
-           (setq field-value (cdr (kvassoqc field-name params)))
-         unless
-           (esxml--field-check
-            field-plist field-value
-            db (when db (plist-get field-plist :db-check)))
-         collect (list ; return the error structure
-                  field-name
-                  field-value
-                  (plist-get field-plist :type-check-failure))))))
+    (let* (last-check
+           (db (esxml-form-db fs))
+           (fields-set (esxml-form-fields fs))
+           (errors
+            (loop with field-value
+               for (field-name . field-plist) in fields-set
+               do
+                 (setq field-value (cdr (kvassoqc field-name params)))
+               when
+                 (setq
+                  last-check
+                  (esxml--field-check
+                   field-plist field-value
+                   db (when db
+                        (subs-all field-value '$
+                                  (plist-get field-plist :db-check)))))
+               collect (list ; return the error structure
+                        field-name
+                        field-value
+                        (let ((check-msg
+                               (plist-get field-plist :check-failure)))
+                          (if (listp check-msg)
+                              (car (aget check-msg last-check))
+                              check-msg))))))
+      (cond
+        ((and errors (functionp onerror))
+         (funcall onerror params errors))
+        ((and (not errors) (functionp onsuccess))
+         (funcall onsuccess params))
+        (t errors)))))
 
 (defun esxml-field-set->esxml (form &optional params errors)
   "Fieldset of FORM to ESXML description of fields.
@@ -178,13 +203,23 @@ If validation errors occur they are output as a DIV with class
                  ((class . "error"))
                  ,(elt err 1)))))))) form)))
 
-(defun esxml-form-save (form params)
-  "Save the specified PARAMS in the FORM in the attached DB."
+(defun* esxml-form-save (form params
+                              &key db-data)
+  "Save the specified PARAMS in the FORM in the attached DB.
+
+If DB-DATA is a function it is called to filter the data going
+into the DB."
   (let ((db (esxml-form-db form))
         (db-key (plist-get form :db-key)))
     (when (and db db-key)
-      (let ((key-value (aget params db-key)))
-        (db-put key-value params db)))))
+      (let ((key-value (aget params db-key))
+            (form-data
+             (esxml-form-bind (assoc (symbol-name name) params) form)))
+        (db-put key-value
+                (if (functionp db-data)
+                    (funcall db-data form-data)
+                    form-data)
+                db)))))
 
 (provide 'esxml-form)
 

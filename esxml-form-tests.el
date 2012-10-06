@@ -23,6 +23,30 @@
                :db-check (= "name" $))
               (key
                :regex "[A-Za-z0-9=]+"
+               :html :textarea)))
+            (fs-check ; specified string check
+             (esxml-form
+              (:db my-test-db :db-key "username")
+              (username
+               :regex "[A-Za-z]+"
+               :check-failure "use only letters"
+               :db-key t
+               :db-check (= "name" $))
+              (key
+               :regex "[A-Za-z0-9=]+"
+               :html :textarea)))
+            (fs-check-choose ; specified list check
+             (esxml-form
+              (:db my-test-db :db-key "username")
+              (username
+               :regex "[A-Za-z]+"
+               :check-failure
+               ((:regex "use only letters")
+                (:db-check "choose a different username"))
+               :db-key t
+               :db-check (= "name" $))
+              (key
+               :regex "[A-Za-z0-9=]+"
                :html :textarea))))
        ,@body)))
 
@@ -37,9 +61,10 @@
   (esxml-form-field-set--test-defaults
    (let* ((fields (esxml-form-fields fs))
           (username-field (aget fields 'username)))
-     (should (esxml--field-check username-field "NicFerrier"))
-     (should-not
-      (esxml--field-check username-field "!NicFerrier")))))
+     (should-not (esxml--field-check username-field "NicFerrier"))
+     (should
+      (eq :regex
+          (esxml--field-check username-field "!NicFerrier"))))))
 
 (ert-deftest esxml-field-set-check ()
   (esxml-form-field-set--test-defaults
@@ -48,18 +73,30 @@
      (let (my-test-db) ; don't do db validation
        (should-not (esxml-field-set-check fs params))
        ;; Now with an invalid field
-       (let ((params '(("username" . "!nic")
-                       ("key" . "ssh-dss sadwqqwdqdqd="))))
+       (let ((params
+              '(("username" . "!nic")
+                ("key" . "ssh-dss sadwqqwdqdqd="))))
          (should
           (equal
            '((username "!nic" "the content of the field was wrong"))
-           (esxml-field-set-check fs params)))))
+           (esxml-field-set-check fs params)))
+         ;; With invalid field and specific message
+         (should
+          (equal
+           '((username "!nic" "use only letters"))
+           (esxml-field-set-check fs-check params)))))
      ;; Now do one with db-validation
-     (should-not (esxml-field-set-check fs params))
+     (let ((db-valid (esxml-field-set-check fs params)))
+       (should (eq nil db-valid)))
      ;; And now add a row first and then do it
      (db-put "001" '((name . "nic")
                      (key . "311ndknd1")) my-test-db)
-     (should (esxml-field-set-check fs params)))))
+     (should (esxml-field-set-check fs params))
+     ;; Now one with a check map
+     (should
+      (equal
+       '((username "nic" "choose a different username"))
+       (esxml-field-set-check fs-check-choose params))))))
 
 (ert-deftest esxml-form-test-db ()
   "Test that the db is there."
@@ -110,11 +147,15 @@
 (ert-deftest esxml-form-save ()
   (esxml-form-field-set--test-defaults
    (let* ((params '(("username" . "test001")
-                    ("key" . "wadkwqdnwdNJNSJNJSw")))
+                    ("key" . "wadkwqdnwdNJNSJNJSw")
+                    ("doit" . "doit"))) ; last one is fake button or something
           (errors (esxml-field-set-check fs params)))
      (unless errors (esxml-form-save fs params))
      (let ((value (db-get "test001" my-test-db)))
-       (should value)))))
-
+       (should
+        (equalx
+         value
+         '(("username" . "test001")
+           ("key" . "wadkwqdnwdNJNSJNJSw"))))))))
 
 ;; ends
