@@ -187,21 +187,25 @@ If validation errors occur they are output as a DIV with class
               (err (aget errors name)))
          (apply
           'esxml-label
-          (cons
-           symname
+          symname
+          (list
            (cons
-            (case html
-              (:text (esxml-input symname "text" value))
-              (:password (esxml-input symname "password" value))
-              (:checkbox (esxml-input symname "checkbox" value))
-              (:radio (esxml-input symname "radio" value))
-              ;;(:select (esxml-select (symbol-name name)))
-              (:textarea (esxml-textarea symname value)))
-            (when err
-              (list
-               `(div
-                 ((class . "error"))
-                 ,(elt err 1)))))))) form)))
+            'div
+            (cons
+             '()
+             (cons
+              (case html
+                (:text (esxml-input symname "text" value))
+                (:password (esxml-input symname "password" value))
+                (:checkbox (esxml-input symname "checkbox" value))
+                (:radio (esxml-input symname "radio" value))
+                ;;(:select (esxml-select (symbol-name name)))
+                (:textarea (esxml-textarea symname value)))
+              (when err
+                (list
+                 `(div
+                   ((class . "error"))
+                   ,(elt err 1)))))))))) form)))
 
 (defun* esxml-form-save (form params
                               &key db-data)
