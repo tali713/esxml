@@ -98,12 +98,13 @@ slower and will produce longer output."
       (concat "<" (symbol-name tag) " "
               (when attrs
                   (mapconcat 'esxml--convert-pair attrs " "))
-              (if body
+              (if (or body (memq tag esxml-close-tag-required))
                   (concat ">\n"
-                          (replace-regexp-in-string
-                           "^" "  "
-                           (mapconcat 'pp-esxml-to-xml
-                                      body "\n"))
+                          (if body
+                              (replace-regexp-in-string
+                               "^" "  "
+                               (mapconcat 'pp-esxml-to-xml
+                                          body "\n")))
                           "\n</" (symbol-name tag) ">")
                 "/>")))))
 
