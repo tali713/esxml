@@ -57,6 +57,10 @@ general use."
   (format "%S=%S" (car pair) (cdr pair)))
 
 
+(defconst esxml-close-tag-required
+  '(textarea script)
+  "The elements which require a proper close tag.")
+
 ;; While the following could certainly have been written using format,
 ;; concat makes them easier to read.  Update later if neccesary for
 ;; efficiency.
@@ -80,8 +84,8 @@ is 0 or more esxml elements."
       (concat "<" (symbol-name tag)
               (when attrs
                 (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
-              (if body
-                  (concat ">" (mapconcat 'esxml-to-xml body "")
+              (if (or body (memq tag esxml-close-tag-required))
+                  (concat ">" (if body (mapconcat 'esxml-to-xml body ""))
                           "</" (symbol-name tag) ">")
                 "/>")))))
 
