@@ -4,7 +4,7 @@
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.0.7
+;; Version: 0.0.9
 ;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
@@ -74,7 +74,28 @@ general use."
 returned by xml-parse-region.  The structure is defined as a
 string or a list where the first element is the tag the second is
 an alist of attribute value pairs and the remainder of the list
-is 0 or more esxml elements."
+is 0 or more esxml elements.
+
+ (TAG ATTRS &rest BODY) || STRING
+
+TAG: is the tag and must be a symbol.
+
+ATTRS: is an alist of attribute pairs each pair must be of the
+       form (KEY . VALUE).
+
+KEY: is the name of the attribute and must be a symbol.
+
+VALUE: is the value of the attribute and must be a string.
+
+BODY: is zero or more esxml expressions.  Having no body forms
+      implies that the tag should be self closed.  If there is
+      one or more body forms the tag will always be explicitly
+      closed, even if they are the empty string.
+
+STRING: if the esxml expression is a string it is returned
+        unchanged, this allows for caching of any constant parts,
+        such as headers and footers.
+"
   (if (stringp esxml) esxml
     (destructuring-bind (tag attrs &rest body) esxml
       (concat "<" (symbol-name tag)
