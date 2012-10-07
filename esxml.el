@@ -145,7 +145,7 @@ factor. :)"
   "Make a label with LABEL-TEXT.
 
 Optionally include the BODY."
-  (let ((label-element `(label () ,(concat label-text ": "))))
+  (let ((label-element `(label () (span () ,(concat label-text ": ")))))
     (if body
         (append label-element body)
         label-element)))
