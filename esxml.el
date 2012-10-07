@@ -57,10 +57,6 @@ general use."
   (format "%S=%S" (car pair) (cdr pair)))
 
 
-(defconst esxml-close-tag-required
-  '(textarea script)
-  "The elements which require a proper close tag.")
-
 ;; While the following could certainly have been written using format,
 ;; concat makes them easier to read.  Update later if neccesary for
 ;; efficiency.
@@ -84,8 +80,8 @@ is 0 or more esxml elements."
       (concat "<" (symbol-name tag)
               (when attrs
                 (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
-              (if (or body (memq tag esxml-close-tag-required))
-                  (concat ">" (if body (mapconcat 'esxml-to-xml body ""))
+              (if body
+                  (concat ">" (mapconcat 'esxml-to-xml body "")
                           "</" (symbol-name tag) ">")
                 "/>")))))
 
@@ -98,13 +94,12 @@ slower and will produce longer output."
       (concat "<" (symbol-name tag) " "
               (when attrs
                   (mapconcat 'esxml--convert-pair attrs " "))
-              (if (or body (memq tag esxml-close-tag-required))
+              (if body
                   (concat ">\n"
-                          (if body
-                              (replace-regexp-in-string
-                               "^" "  "
-                               (mapconcat 'pp-esxml-to-xml
-                                          body "\n")))
+                          (replace-regexp-in-string
+                           "^" "  "
+                           (mapconcat 'pp-esxml-to-xml
+                                      body "\n"))
                           "\n</" (symbol-name tag) ">")
                 "/>")))))
 
@@ -167,8 +162,8 @@ VALUE is optional, if it's supplied whatever is supplied is used.
 (defun esxml-textarea (name &optional content)
   "Make an HTML TextArea control."
   `(textarea ((name . ,name))
-             ,@(when content (list content))))
-;; this may be incorrect, textareas /may/ require a body
+             ;; textareas require a body all the time
+             ,@(if content (list content) "")))
 
 (defun esxml-listify (body &optional ordered-p)
   `(,(if ordered-p 'ol 'ul) ()
