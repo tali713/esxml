@@ -221,6 +221,32 @@ into the DB."
                     form-data)
                 db)))))
 
+
+;;; This isn't right yet. needs to be more generic.
+(defun esxml-form-handle (form httpcon page handler &optional extra-data)
+  "Handle the FORM on the HTTPCON.
+
+PAGE is the file you will send.
+
+HANDLER is a function that takes the DATA from the POST that has
+been validated by the FORM for saving it.
+
+EXTRA-DATA is passed to the PAGE as extra `replacements'."
+  (flet ((send (&optional data errors)
+           (let ((esxml (esxml-field-set->esxml form data errors)))
+             (elnode-send-file
+              httpcon page
+              :replacements `(("form" . ,(esxml-to-xml esxml))
+                              ,@extra-data)))))
+    (elnode-method httpcon
+      (GET (send))
+      (POST
+       (esxml-field-set-check
+        form (elnode-http-params httpcon)
+        :onerror 'send
+        :onsuccess handler)))))
+
+
 (provide 'esxml-form)
 
 ;; ends
