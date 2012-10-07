@@ -214,7 +214,7 @@ If validation errors occur they are output as a DIV with class
 If DB-DATA is a function it is called to filter the data going
 into the DB."
   (let ((db (esxml-form-db form))
-        (db-key (plist-get form :db-key)))
+
     (when (and db db-key)
       (let ((key-value (aget params db-key))
             (form-data

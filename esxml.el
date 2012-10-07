@@ -157,11 +157,13 @@ VALUE is optional, if it's supplied whatever is supplied is used.
 `nil' is the blank string."
   `(input ((name . ,name)
            (type . ,type)
+           (placeholder . ,name)
            ,@(when value `((value . ,value))))))
 
 (defun esxml-textarea (name &optional content)
   "Make an HTML TextArea control."
-  `(textarea ((name . ,name))
+  `(textarea ((name . ,name)
+              (placeholder . ,name))
              ;; textareas require a body all the time
              ,@(if content (list content) "")))
 
