@@ -4,7 +4,7 @@
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.0.9
+;; Version: 0.1.0
 ;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
@@ -159,8 +159,8 @@ factor. :)"
 ;;                                       ,name))))))))
 ;; we should instead define this cleanly.
 
-(defun esxml-link (url name)
-  `(a ((href . ,url)) ,name))
+(defun esxml-link (url &rest body)
+  `(a ((href . ,url)) ,@body))
 
 (defun esxml-label (label-text &rest body)
   "Make a label with LABEL-TEXT.
