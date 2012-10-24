@@ -209,7 +209,7 @@ field-value and validation error message if it fails."
     ,(esxml-label name '((class . "control-label")))
     (div
      ((class . "controls"))
-     ,(let ((ctrl
+     ,@(let ((ctrl
              (case html
                (:text (esxml-input name "text" value))
                (:password (esxml-input name "password" value))
@@ -218,10 +218,10 @@ field-value and validation error message if it fails."
                ;;(:select (esxml-select (symbol-name name)))
                (:textarea (esxml-textarea name (or value ""))))))
            (if err
-               (append ctrl
-                       `(span ((class . "help-inline"))
-                              ,(elt err 1)))
-               ctrl)))))
+               (list ctrl
+                     `(span ((class . "help-inline"))
+                            ,(elt err 1)))
+               (list ctrl))))))
 
 (defvar esxml-field-style :label
   "Style used for making form fields.")
