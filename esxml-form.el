@@ -6,7 +6,7 @@
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Keywords: data, lisp
 ;; Created: 23rd September 2012
-;; Package-Requires: ((kv "0.0.7")(esxml "0.0.7"))
+;; Package-Requires: ((kv "0.0.7")(esxml "0.0.7")(db "0.0.1"))
 ;; Version: 0.0.1
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -81,6 +81,9 @@ data, for example, a database."
 
 (defun esxml-form-db (fs)
   (symbol-value (plist-get fs :db)))
+
+(defun esxml-form-db-key (fs)
+  (plist-get fs :db-key))
 
 (defmacro esxml-form-bind (body form)
   "Bind BODY successively to FORMS fields."
@@ -167,7 +170,63 @@ field-value and validation error message if it fails."
          (funcall onsuccess params))
         (t errors)))))
 
-(defun esxml-field-set->esxml (form &optional params errors)
+(defun* esxml-field-set/label-style (&key
+                                     html
+                                     name
+                                     value
+                                     err)
+  (esxml-label
+   name
+   nil
+   (cons
+    'div
+    (cons
+     '()
+     (cons
+      (case html
+        (:text (esxml-input name "text" value))
+        (:password (esxml-input name "password" value))
+        (:checkbox (esxml-input name "checkbox" value))
+        (:radio (esxml-input name "radio" value))
+        ;;(:select (esxml-select (symbol-name name)))
+        (:textarea (esxml-textarea name value)))
+      (when err
+        (list
+         `(div
+           ((class . "error"))
+           ,(elt err 1)))))))))
+
+(defun* esxml-field-set/bootstrap-style (&key
+                                          html
+                                          name
+                                          value
+                                          err)
+  "Produce a field in twitter bootstrap style."
+  `(div
+    ((class . ,(concat
+                "control-group"
+                (when err " error"))))
+    ,(esxml-label name '((class . "control-label")))
+    (div
+     ((class . "controls"))
+     ,(let ((ctrl
+             (case html
+               (:text (esxml-input name "text" value))
+               (:password (esxml-input name "password" value))
+               (:checkbox (esxml-input name "checkbox" value))
+               (:radio (esxml-input name "radio" value))
+               ;;(:select (esxml-select (symbol-name name)))
+               (:textarea (esxml-textarea name (or value ""))))))
+           (if err
+               (append ctrl
+                       `(span ((class . "help-inline"))
+                              ,(elt err 1)))
+               ctrl)))))
+
+(defvar esxml-field-style :label
+  "Style used for making form fields.")
+
+(defun esxml-field-set->esxml (form &optional params errors style)
   "Fieldset of FORM to ESXML description of fields.
 
 PARAMS, if supplied, is an ALIST of field-names -> value bindings
@@ -178,34 +237,26 @@ The output is an ESXML representation of a form in label
 style (an HTML LABEL element contains the controls).
 
 If validation errors occur they are output as a DIV with class
-\"error\", again, inside the LABEL."
-  `(fieldset
-    ()
-    ,@(esxml-form-bind
-       (let* ((symname (symbol-name name))
-              (value (aget params symname))
-              (err (aget errors name)))
-         (apply
-          'esxml-label
-          symname
-          (list
-           (cons
-            'div
-            (cons
-             '()
-             (cons
-              (case html
-                (:text (esxml-input symname "text" value))
-                (:password (esxml-input symname "password" value))
-                (:checkbox (esxml-input symname "checkbox" value))
-                (:radio (esxml-input symname "radio" value))
-                ;;(:select (esxml-select (symbol-name name)))
-                (:textarea (esxml-textarea symname value)))
-              (when err
-                (list
-                 `(div
-                   ((class . "error"))
-                   ,(elt err 1)))))))))) form)))
+\"error\", again, inside the LABEL.
+
+STYLE, if specified is a either `:label' or `:bootstrap' to
+indicate the style of form output used."
+  (let ((form-style (or style esxml-field-style :label)))
+    `(fieldset
+      ()
+      ,@(esxml-form-bind
+         (let* ((symname (symbol-name name))
+                (value (aget params symname))
+                (err (aget errors name)))
+           (funcall
+            (case form-style
+              (:label 'esxml-field-set/label-style)
+              (:bootstrap 'esxml-field-set/bootstrap-style))
+            :html html
+            :name symname
+            :value value
+            :err err))
+         form))))
 
 (defun* esxml-form-save (form params
                               &key db-data)
@@ -214,7 +265,7 @@ If validation errors occur they are output as a DIV with class
 If DB-DATA is a function it is called to filter the data going
 into the DB."
   (let ((db (esxml-form-db form))
-
+        (db-key (esxml-form-db-key form)))
     (when (and db db-key)
       (let ((key-value (aget params db-key))
             (form-data
@@ -253,4 +304,4 @@ EXTRA-DATA is passed to the PAGE as extra `replacements'."
 
 (provide 'esxml-form)
 
-;; ends
+;;; esxml-form.el ends here
