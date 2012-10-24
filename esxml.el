@@ -162,11 +162,14 @@ factor. :)"
 (defun esxml-link (url &rest body)
   `(a ((href . ,url)) ,@body))
 
-(defun esxml-label (label-text &rest body)
-  "Make a label with LABEL-TEXT.
+(defun esxml-label (label-text attribs &rest body)
+  "Make a label with LABEL-TEXT and ATTRIBS.
 
 Optionally include the BODY."
-  (let ((label-element `(label () ,(concat label-text ": "))))
+  (let ((label-element
+         `(label
+           ,attribs
+           (span () ,(concat label-text ": ")))))
     (if body
         (append label-element body)
         label-element)))
@@ -178,12 +181,15 @@ VALUE is optional, if it's supplied whatever is supplied is used.
 `nil' is the blank string."
   `(input ((name . ,name)
            (type . ,type)
+           (placeholder . ,name)
            ,@(when value `((value . ,value))))))
 
 (defun esxml-textarea (name &optional content)
   "Make an HTML TextArea control."
-  `(textarea ((name . ,name))
-             ,@(when content (list content))))
+  `(textarea ((name . ,name)
+              (placeholder . ,name))
+             ;; textareas require a body all the time
+             ,@(if content (list content) "")))
 
 (defun esxml-listify (body &optional ordered-p)
   `(,(if ordered-p 'ol 'ul) ()
