@@ -141,11 +141,14 @@ factor. :)"
 (defun esxml-link (url name)
   `(a ((href . ,url)) ,name))
 
-(defun esxml-label (label-text &rest body)
-  "Make a label with LABEL-TEXT.
+(defun esxml-label (label-text attribs &rest body)
+  "Make a label with LABEL-TEXT and ATTRIBS.
 
 Optionally include the BODY."
-  (let ((label-element `(label () (span () ,(concat label-text ": ")))))
+  (let ((label-element
+         `(label
+           ,attribs
+           (span () ,(concat label-text ": ")))))
     (if body
         (append label-element body)
         label-element)))
