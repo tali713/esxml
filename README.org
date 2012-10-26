@@ -63,7 +63,9 @@ also includes tools for working with parsed xml
                          (br) "Have been visited " ,(format "%s" count) " times since last started.")))))))
 #+END_SRC
 
-** Advanced examples to appear in this location
+** Advanced examples
+*** A standard page generator
+
 
 * Extracting Data from XML
   TODO

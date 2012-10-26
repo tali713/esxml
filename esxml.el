@@ -4,7 +4,7 @@
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
@@ -253,6 +253,8 @@ recurse below a match."
 (defun esxml-get-forms (esxml)
   "Returns a list of all forms."
   (esxml-get-tags esxml '(form)))
+
+(defalias 'esxml-destructuring-mapcar 'kvmap-bind)
 
 (provide 'esxml)
 ;;; esxml.el ends here
