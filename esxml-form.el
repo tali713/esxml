@@ -95,8 +95,10 @@ data, for example, a database."
 
 ;; Verification stuff
 
-(defvar esxml-form-field-set-email-verify-re
-  "[a-zA-Z0-9-]+@[a-zA-Z0-9.-]+\\(.com\\|.net\\|.org\\)$")
+(defconst esxml-form-field-set-email-verify-re
+  (concat
+   "[a-zA-Z0-9-]+@[a-zA-Z0-9.-]+"
+   "\\.\\(com\\|net\\|org\\|gov\\|[A-Za-z]+\\.[A-Za-z]+\\)$"))
 
 (defun esxml--field-check (field value &optional db query)
   "Do a validity check on the FIELD.
