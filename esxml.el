@@ -107,21 +107,21 @@ STRING: if the esxml expression is a string it is returned
                 "/>")))))
 
 (defun pp-esxml-to-xml (esxml)
-  "This translates an esxml expresion as `esxml-to-xml' but
-indents it for ease of human readability, it is neccesarrily
-slower and will produce longer output."
+  "This translates an esxml expresion as `esxml-to-xml' but indents it for ease of human readability, it is neccesarrily slower and will produce longer output."
   (if (stringp esxml) esxml
     (destructuring-bind (tag attrs . body) esxml
-      (concat "<" (symbol-name tag) " "
+      (concat "<" (symbol-name tag)
               (when attrs
-                  (mapconcat 'esxml--convert-pair attrs " "))
+                (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
               (if body
-                  (concat ">\n"
-                          (replace-regexp-in-string
-                           "^" "  "
-                           (mapconcat 'pp-esxml-to-xml
-                                      body "\n"))
-                          "\n</" (symbol-name tag) ">")
+                  (concat ">" (if (every 'stringp body)
+                                  (mapconcat 'identity body " ")
+                                (concat "\n"
+                                        (replace-regexp-in-string
+                                         "^" "  "
+                                         (mapconcat 'pp-esxml-to-xml body "\n"))
+                                        "\n"))
+                          "</" (symbol-name tag) ">")
                 "/>")))))
 
 (defun sxml-to-esxml (sxml)
