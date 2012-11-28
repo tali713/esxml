@@ -4,7 +4,7 @@
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.1.1
+;; Version: 0.1.5
 ;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
@@ -107,7 +107,9 @@ STRING: if the esxml expression is a string it is returned
                 "/>")))))
 
 (defun pp-esxml-to-xml (esxml)
-  "This translates an esxml expresion as `esxml-to-xml' but indents it for ease of human readability, it is neccesarrily slower and will produce longer output."
+  "This translates an esxml expresion as `esxml-to-xml' but
+indents it for ease of human readability, it is neccesarrily
+slower and will produce longer output."
   (if (stringp esxml) esxml
     (destructuring-bind (tag attrs . body) esxml
       (concat "<" (symbol-name tag)
