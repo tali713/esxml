@@ -95,8 +95,10 @@ data, for example, a database."
 
 ;; Verification stuff
 
-(defvar esxml-form-field-set-email-verify-re
-  "[a-zA-Z0-9-]+@[a-zA-Z0-9.-]+\\(.com\\|.net\\|.org\\)$")
+(defconst esxml-form-field-set-email-verify-re
+  (concat
+   "[a-zA-Z0-9-]+@[a-zA-Z0-9.-]+"
+   "\\.\\(com\\|net\\|org\\|gov\\|[A-Za-z]+\\.[A-Za-z]+\\)$"))
 
 (defun esxml--field-check (field value &optional db query)
   "Do a validity check on the FIELD.
@@ -209,7 +211,7 @@ field-value and validation error message if it fails."
     ,(esxml-label name '((class . "control-label")))
     (div
      ((class . "controls"))
-     ,(let ((ctrl
+     ,@(let ((ctrl
              (case html
                (:text (esxml-input name "text" value))
                (:password (esxml-input name "password" value))
@@ -218,10 +220,10 @@ field-value and validation error message if it fails."
                ;;(:select (esxml-select (symbol-name name)))
                (:textarea (esxml-textarea name (or value ""))))))
            (if err
-               (append ctrl
-                       `(span ((class . "help-inline"))
-                              ,(elt err 1)))
-               ctrl)))))
+               (list ctrl
+                     `(span ((class . "help-inline"))
+                            ,(elt err 1)))
+               (list ctrl))))))
 
 (defvar esxml-field-style :label
   "Style used for making form fields.")
