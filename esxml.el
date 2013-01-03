@@ -4,7 +4,7 @@
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.1.5
+;; Version: 0.1.7
 ;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
@@ -59,7 +59,7 @@ end of the string.  Leaves all other whitespace untouched."
   "This may cause problems, is intended for parsing xml into sxml
 but may eroneously delete desirable white space."
   (if (stringp esxml) (string-trim-whitespace esxml)
-    (destructuring-bind (tag attrs . body) esxml
+    (destructuring-bind (tag attrs &rest body) esxml
       `(,tag ,attrs
              ,@(mapcar 'esxml-trim-ws body)))))
 
@@ -68,6 +68,13 @@ but may eroneously delete desirable white space."
 general use."
   (format "%S=%S" (car pair) (cdr pair)))
 
+(defun attrsp (attrs)  
+  (and (listp attrs)
+       (every (lambda (attr)
+                (and (consp attr)
+                     (symbolp (car attr))
+                     (stringp (cdr attr))))
+              attrs)))
 
 ;; While the following could certainly have been written using format,
 ;; concat makes them easier to read.  Update later if neccesary for
@@ -110,6 +117,7 @@ STRING: if the esxml expression is a string it is returned
 "
   (if (stringp esxml) esxml
     (destructuring-bind (tag attrs &rest body) esxml
+      ;; code goes here to catch invalid data.
       (concat "<" (symbol-name tag)
               (when attrs
                 (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
@@ -122,21 +130,30 @@ STRING: if the esxml expression is a string it is returned
   "This translates an esxml expresion as `esxml-to-xml' but
 indents it for ease of human readability, it is neccesarrily
 slower and will produce longer output."
-  (if (stringp esxml) esxml
-    (destructuring-bind (tag attrs . body) esxml
-      (concat "<" (symbol-name tag)
-              (when attrs
-                (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
-              (if body
-                  (concat ">" (if (every 'stringp body)
-                                  (mapconcat 'identity body " ")
-                                (concat "\n"
-                                        (replace-regexp-in-string
-                                         "^" "  "
-                                         (mapconcat 'pp-esxml-to-xml body "\n"))
-                                        "\n"))
-                          "</" (symbol-name tag) ">")
-                "/>")))))
+  (cond ((stringp esxml) esxml)
+        ((and (listp esxml)
+              (> (length esxml) 1))
+         (destructuring-bind (tag attrs &rest body) esxml
+           (cond ((not (symbolp tag))
+                  (signal 'wrong-type-argument (list 'symbolp tag)))
+                 ((not (attrsp attrs))
+                  (signal 'wrong-type-argument (list 'attrsp attrs)))
+                 (t 
+                  (concat "<" (symbol-name tag)
+                          (when attrs
+                            (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
+                          (if body
+                              (concat ">" (if (every 'stringp body)
+                                              (mapconcat 'identity body " ")
+                                            (concat "\n"
+                                                    (replace-regexp-in-string
+                                                     "^" "  "
+                                                     (mapconcat 'pp-esxml-to-xml body "\n"))
+                                                    "\n"))
+                                      "</" (symbol-name tag) ">")
+                            "/>"))))))
+        (t (error "%s is not a valid esxml expression" esxml))))
+
 
 (defun sxml-to-esxml (sxml)
   "Translates sxml to esxml so the common standard can be used.
@@ -153,6 +170,7 @@ See: http://okmij.org/ftp/Scheme/SXML.html."
       (`(,tag . ,body)
        `(,tag nil
               ,@(mapcar 'sxml-to-esxml body))))))
+
 
 (defun sxml-to-xml (sxml)
   "Translates sxml to xml, via esxml, hey it's only a constant
@@ -242,7 +260,7 @@ VALUE is optional, if it's supplied whatever is supplied is used.
 VALUE.  KEY should be a symbol, and VALUE should be a string.
 Will not recurse below a match."
   (unless (stringp esxml)
-    (destructuring-bind (tag attrs . body) esxml 
+    (destructuring-bind (tag attrs &rest body) esxml 
       (if (equal value
                  (assoc-default key attrs))
           (list esxml)
