@@ -4,7 +4,7 @@
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.1.7
+;; Version: 0.1.8
 ;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
@@ -63,10 +63,16 @@ but may eroneously delete desirable white space."
       `(,tag ,attrs
              ,@(mapcar 'esxml-trim-ws body)))))
 
-(defun esxml--convert-pair (pair)
+(defun attrp (attr)
+  (and (consp attr)
+       (symbolp (car attr))
+       (stringp (cdr attr))))
+
+(defun esxml--convert-pair (attr)
   "Converts from cons cell to attribute pair.  Not intended for
 general use."
-  (format "%S=%S" (car pair) (cdr pair)))
+  (type-assert 'attrp attr)
+  (format "%S=%S" (car attr) (cdr attr)))
 
 (defun attrsp (attrs)  
   (and (listp attrs)
@@ -75,6 +81,19 @@ general use."
                      (symbolp (car attr))
                      (stringp (cdr attr))))
               attrs)))
+
+(defun type-assert (typep var)
+  (unless (funcall typep var)
+    (signal 'wrong-type-argument (list typep var))))
+
+(defun esxml-validate-form (esxml)
+  (cond ((stringp esxml) nil)
+        ((< (length esxml) 2) (error "%s is not a valid esxml expression" esxml))
+        (t (destructuring-bind (tag attrs &rest body) esxml
+             (type-assert 'symbolp tag)
+             (type-assert 'attrsp attrs)
+             (mapcar 'esxml-validate-form body)))))
+
 
 ;; While the following could certainly have been written using format,
 ;; concat makes them easier to read.  Update later if neccesary for
@@ -88,6 +107,17 @@ general use."
 ;; Further, since a string is a terminal node and since xml can be
 ;; represented as a string, non dynamic portions of the page may be
 ;; precached quite easily.
+(defun esxml--to-xml-recursive (esxml)
+  (if (stringp esxml) esxml
+    (destructuring-bind (tag attrs &rest body) esxml
+      ;; code goes here to catch invalid data.
+      (concat "<" (symbol-name tag)
+              (when attrs (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
+              (if body
+                  (concat ">" (mapconcat 'esxml-to-xml body "")
+                          "</" (symbol-name tag) ">")
+                "/>")))))
+
 (defun esxml-to-xml (esxml)
   "This translates an esxml expression, i.e. that which is
 returned by xml-parse-region.  The structure is defined as a
@@ -115,16 +145,12 @@ STRING: if the esxml expression is a string it is returned
         unchanged, this allows for caching of any constant parts,
         such as headers and footers.
 "
-  (if (stringp esxml) esxml
-    (destructuring-bind (tag attrs &rest body) esxml
-      ;; code goes here to catch invalid data.
-      (concat "<" (symbol-name tag)
-              (when attrs
-                (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
-              (if body
-                  (concat ">" (mapconcat 'esxml-to-xml body "")
-                          "</" (symbol-name tag) ">")
-                "/>")))))
+  (condition-case nil
+      (esxml--to-xml-recursive esxml)
+    (error (esxml-validate-form esxml))))
+
+(pp-esxml-to-xml '(tag ((a . "b"))
+                       (tag2 ((a "c")))))
 
 (defun pp-esxml-to-xml (esxml)
   "This translates an esxml expresion as `esxml-to-xml' but
