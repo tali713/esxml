@@ -149,8 +149,6 @@ STRING: if the esxml expression is a string it is returned
       (esxml--to-xml-recursive esxml)
     (error (esxml-validate-form esxml))))
 
-(pp-esxml-to-xml '(tag ((a . "b"))
-                       (tag2 ((a "c")))))
 
 (defun pp-esxml-to-xml (esxml)
   "This translates an esxml expresion as `esxml-to-xml' but
