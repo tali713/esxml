@@ -1,10 +1,10 @@
-C;;; esxml.el --- Library for working with xml via esxml and sxml
+;;; esxml.el --- Library for working with xml via esxml and sxml
 ;; Copyright (C) 2012
 
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.2.0
+;; Version: 0.2.1
 ;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
@@ -64,7 +64,7 @@ end of the string.  Leaves all other whitespace untouched."
   "This may cause problems, is intended for parsing xml into sxml
 but may eroneously delete desirable white space."
   (if (stringp esxml) (string-trim-whitespace esxml)
-    (destructuring-bind (tag attrs &rest body) esxml
+    (pcase-let ((`(,tag ,attrs . ,body) esxml))
       `(,tag ,attrs
              ,@(mapcar 'esxml-trim-ws body)))))
 
@@ -78,10 +78,11 @@ An esxml attribute is a cons of the form (symbol . string)"
 (defun esxml--convert-pair (attr)
   "Converts from cons cell to attribute pair.  Not intended for
 general use."
-  (pcase-let (`(,car . ,cdr) attr)
+  (pcase-let ((`(,car . ,cdr) attr))
     (check-type cdr string)
     (concat (symbol-name car)
-            "=" (prin1-to-string (cdr attr)))))
+            "="
+            (prin1-to-string (cdr attr)))))
 
 (defun attrsp (attrs)
     "Returns t if attrs is a list of esxml attributes.
@@ -100,7 +101,7 @@ it suitable for hindsight testing."
   (cond ((stringp esxml) nil)
         ((< (length esxml) 2)
          (error "%s is too short to be a valid esxml expression" esxml))
-        (t (destructuring-bind (tag attrs &rest body) esxml
+        (t (pcase-let ((`(,tag ,attrs . ,body) esxml))
              (check-type tag symbol)
              (check-type attrs attrs)
              (mapcar 'esxml-validate-form body)))))
@@ -119,7 +120,7 @@ it suitable for hindsight testing."
 ;; precached quite easily.
 (defun esxml--to-xml-recursive (esxml)
   (if (stringp esxml) esxml
-    (destructuring-bind (tag attrs &rest body) esxml
+    (pcase-let ((`(,tag ,attrs . ,body) esxml))
       ;; code goes here to catch invalid data.
       (concat "<" (symbol-name tag)
               (when attrs (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
@@ -166,7 +167,7 @@ slower and will produce longer output."
   (cond ((stringp esxml) esxml)
         ((and (listp esxml)
               (> (length esxml) 1))
-         (destructuring-bind (tag attrs &rest body) esxml
+         (pcase-let ((`(,tag ,attrs . ,body) esxml))
            (check-type tag symbol)
            (check-type attrs attrs)
            (concat "<" (symbol-name tag)
@@ -187,18 +188,18 @@ slower and will produce longer output."
 (defun sxml-to-esxml (sxml)
   "Translates sxml to esxml so the common standard can be used.
 See: http://okmij.org/ftp/Scheme/SXML.html."
-  (if (stringp sxml) sxml
-    (pcase sxml
-      (`(,tag (@ . ,attrs) . ,body)
-       `(,tag ,(mapcar (lambda (attr)
-                         (cons (first attr)
-                               (or (second attr)
-                                   (prin1-to-string (first attr)))))
-                       attrs)
-              ,@(mapcar 'sxml-to-esxml body)))
-      (`(,tag . ,body)
-       `(,tag nil
-              ,@(mapcar 'sxml-to-esxml body))))))
+  (pcase sxml
+    (`(,tag (@ . ,attrs) . ,body)
+     `(,tag ,(mapcar (lambda (attr)
+                       (cons (first attr)
+                             (or (second attr)
+                                 (prin1-to-string (first attr)))))
+                     attrs)
+            ,@(mapcar 'sxml-to-esxml body)))
+    (`(,tag . ,body)
+     `(,tag nil
+            ,@(mapcar 'sxml-to-esxml body)))
+    ((and sxml (pred stringp)) sxml)))
 
 (defun sxml-to-xml (sxml)
   "Translates sxml to xml, via esxml, hey it's only a constant
@@ -272,7 +273,7 @@ an alist satisfying `attrsp'."
           (\"http://www.google.com\" \"Google\" \"Everyones favorite search engine\")))
 
   (esxml-to-xml (esxml-create-bookmark-list bookmark-list \": \"))"
-  (esxml-listify (map-bind (url name &optional description)
+  (esxml-listify (kvmap-bind (url name &optional description)
                            `(,(esxml-link url name)
                              ,@(when description
                                  `(,seperator ,description)))
@@ -382,12 +383,12 @@ esxml-generation), within BODY
               (style 'esxml-head-style)))
      (esxml--head ,title ,@body)))
 
-(esxml-head "Title Text"
-  (base "http://this.url/resources/")
-  (css-link "some.css")
-  (meta 'keyword "cool, awesome, unignorable")
-  (meta 'content-type "text/html" t)
-  (script "example-script.js"))
+;; (esxml-head "Title Text"
+;;   (base "http://this.url/resources/")
+;;   (css-link "some.css")
+;;   (meta 'keyword "cool, awesome, unignorable")
+;;   (meta 'content-type "text/html" t)
+;;   (script "example-script.js"))
 
 
 
@@ -405,7 +406,7 @@ esxml-generation), within BODY
 VALUE.  KEY should be a symbol, and VALUE should be a string.
 Will not recurse below a match."
   (unless (stringp esxml)
-    (destructuring-bind (tag attrs &rest body) esxml
+    (pcase-let ((`(,tag ,attrs . ,body) esxml))
       (if (equal value
                  (assoc-default key attrs))
           (list esxml)
