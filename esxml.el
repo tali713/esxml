@@ -98,14 +98,12 @@ See: `attrp'"
   "A fast esxml validator.  Will error on invalid subparts making
 it suitable for hindsight testing."
   (cond ((stringp esxml) nil)
-        ((< (length esxml) 2) (error "%s is too short to be a valid esxml expression" esxml))
+        ((< (length esxml) 2)
+         (error "%s is too short to be a valid esxml expression" esxml))
         (t (destructuring-bind (tag attrs &rest body) esxml
              (check-type tag symbol)
              (check-type attrs attrs)
              (mapcar 'esxml-validate-form body)))))
-
-
-
 
 ;; While the following could certainly have been written using format,
 ;; concat makes them easier to read.  Update later if neccesary for
@@ -186,7 +184,6 @@ slower and will produce longer output."
                      "/>"))))
         (t (error "%s is not a valid esxml expression" esxml))))
 
-
 (defun sxml-to-esxml (sxml)
   "Translates sxml to esxml so the common standard can be used.
 See: http://okmij.org/ftp/Scheme/SXML.html."
@@ -202,7 +199,6 @@ See: http://okmij.org/ftp/Scheme/SXML.html."
       (`(,tag . ,body)
        `(,tag nil
               ,@(mapcar 'sxml-to-esxml body))))))
-
 
 (defun sxml-to-xml (sxml)
   "Translates sxml to xml, via esxml, hey it's only a constant
@@ -257,10 +253,12 @@ VALUE is optional, if it's supplied whatever is supplied is used.
              ;; textareas require a body all the time
              ,@(if content (list content) "")))
 
-(defun esxml-listify (body &optional ordered-p)
+(defun esxml-listify (body &optional ordered-p item-attrs)
   "Transforms a list of esxml forms into an unordered html list.
 BODY is a list of esxml expressions.  If ORDERED-P is non-nil,
-instead creates an ordered list."
+instead creates an ordered list.  If ITEM-ATTRS is non-nil it
+specifies attributes to apply to each item.  ITEM-ATTRS must be
+an alist satisfying `attrsp'."
   `(,(if ordered-p 'ol 'ul) ()
     ,@(kvmap-bind body
           `(li () ,@body)
