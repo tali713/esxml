@@ -1,10 +1,10 @@
-;;; esxml.el --- Library for working with xml via esxml and sxml
-;; Copyright (C) 2012  
+C;;; esxml.el --- Library for working with xml via esxml and sxml
+;; Copyright (C) 2012
 
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.1.8
+;; Version: 0.2.0
 ;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
@@ -38,7 +38,12 @@
 ;; extract a form from a site to produce an API.
 ;;
 ;; TODO: Better documentation, more conveniance.
-
+;;
+;; NOTICE: Code base will be trasnitioning to using pcase instead of
+;; destructuring bind wherever possible.  If this leads to hard to
+;; debug code, please let me know, and I will do whatever I can to
+;; resolve these issues.
+;;
 ;;; Code:
 (eval-when-compile
   (require 'cl))
@@ -64,17 +69,24 @@ but may eroneously delete desirable white space."
              ,@(mapcar 'esxml-trim-ws body)))))
 
 (defun attrp (attr)
-  (and (consp attr)
+  "Returns t if attr is a an esxml attribute.
+An esxml attribute is a cons of the form (symbol . string)"
+ (and (consp attr)
        (symbolp (car attr))
        (stringp (cdr attr))))
 
 (defun esxml--convert-pair (attr)
   "Converts from cons cell to attribute pair.  Not intended for
 general use."
-  (type-assert 'attrp attr)
-  (format "%S=%S" (car attr) (cdr attr)))
+  (pcase-let (`(,car . ,cdr) attr)
+    (check-type cdr string)
+    (concat (symbol-name car)
+            "=" (prin1-to-string (cdr attr)))))
 
-(defun attrsp (attrs)  
+(defun attrsp (attrs)
+    "Returns t if attrs is a list of esxml attributes.
+
+See: `attrp'"
   (and (listp attrs)
        (every (lambda (attr)
                 (and (consp attr)
@@ -82,17 +94,17 @@ general use."
                      (stringp (cdr attr))))
               attrs)))
 
-(defun type-assert (typep var)
-  (unless (funcall typep var)
-    (signal 'wrong-type-argument (list typep var))))
-
 (defun esxml-validate-form (esxml)
+  "A fast esxml validator.  Will error on invalid subparts making
+it suitable for hindsight testing."
   (cond ((stringp esxml) nil)
-        ((< (length esxml) 2) (error "%s is not a valid esxml expression" esxml))
+        ((< (length esxml) 2) (error "%s is too short to be a valid esxml expression" esxml))
         (t (destructuring-bind (tag attrs &rest body) esxml
-             (type-assert 'symbolp tag)
-             (type-assert 'attrsp attrs)
+             (check-type tag symbol)
+             (check-type attrs attrs)
              (mapcar 'esxml-validate-form body)))))
+
+
 
 
 ;; While the following could certainly have been written using format,
@@ -149,7 +161,6 @@ STRING: if the esxml expression is a string it is returned
       (esxml--to-xml-recursive esxml)
     (error (esxml-validate-form esxml))))
 
-
 (defun pp-esxml-to-xml (esxml)
   "This translates an esxml expresion as `esxml-to-xml' but
 indents it for ease of human readability, it is neccesarrily
@@ -158,24 +169,21 @@ slower and will produce longer output."
         ((and (listp esxml)
               (> (length esxml) 1))
          (destructuring-bind (tag attrs &rest body) esxml
-           (cond ((not (symbolp tag))
-                  (signal 'wrong-type-argument (list 'symbolp tag)))
-                 ((not (attrsp attrs))
-                  (signal 'wrong-type-argument (list 'attrsp attrs)))
-                 (t 
-                  (concat "<" (symbol-name tag)
-                          (when attrs
-                            (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
-                          (if body
-                              (concat ">" (if (every 'stringp body)
-                                              (mapconcat 'identity body " ")
-                                            (concat "\n"
-                                                    (replace-regexp-in-string
-                                                     "^" "  "
-                                                     (mapconcat 'pp-esxml-to-xml body "\n"))
-                                                    "\n"))
-                                      "</" (symbol-name tag) ">")
-                            "/>"))))))
+           (check-type tag symbol)
+           (check-type attrs attrs)
+           (concat "<" (symbol-name tag)
+                   (when attrs
+                     (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
+                   (if body
+                       (concat ">" (if (every 'stringp body)
+                                       (mapconcat 'identity body " ")
+                                     (concat "\n"
+                                             (replace-regexp-in-string
+                                              "^" "  "
+                                              (mapconcat 'pp-esxml-to-xml body "\n"))
+                                             "\n"))
+                               "</" (symbol-name tag) ">")
+                     "/>"))))
         (t (error "%s is not a valid esxml expression" esxml))))
 
 
@@ -216,6 +224,8 @@ factor. :)"
 ;; we should instead define this cleanly.
 
 (defun esxml-link (url &rest body)
+  "Creates a standard hypereference link for html.  Url is the
+url of the document, body is the body of the link."
   `(a ((href . ,url)) ,@body))
 
 (defun esxml-label (label-text attribs &rest body)
@@ -248,12 +258,22 @@ VALUE is optional, if it's supplied whatever is supplied is used.
              ,@(if content (list content) "")))
 
 (defun esxml-listify (body &optional ordered-p)
+  "Transforms a list of esxml forms into an unordered html list.
+BODY is a list of esxml expressions.  If ORDERED-P is non-nil,
+instead creates an ordered list."
   `(,(if ordered-p 'ol 'ul) ()
-    ,@(map-bind body
-                `(li () ,@body)
-                body)))
+    ,@(kvmap-bind body
+          `(li () ,@body)
+        body)))
 
 (defun esxml-create-bookmark-list (bookmark-list seperator &optional ordered-p)
+"Example:
+  (setq bookmark-list
+        '((\"http://www.emacswiki.org\" \"Emacs Wiki\" \"Accept no substitutes\")
+          (\"http://www.github.com/\" \"Github\")
+          (\"http://www.google.com\" \"Google\" \"Everyones favorite search engine\")))
+
+  (esxml-to-xml (esxml-create-bookmark-list bookmark-list \": \"))"
   (esxml-listify (map-bind (url name &optional description)
                            `(,(esxml-link url name)
                              ,@(when description
@@ -267,6 +287,109 @@ VALUE is optional, if it's supplied whatever is supplied is used.
 ;;         ("http://www.google.com" "Google" "Everyones favorite search engine")))
 
 ;; (esxml-to-xml (esxml-create-bookmark-list bookmark-list ": "))
+
+;; hint, at this point it may be wise to consider breaking this out as
+;; a seperate web library.
+(defun esxml-head-base (url &optional target)
+  "The BASE element.
+URL is the base url of the page, if non-nil.
+TARGET is the base target, if non-nil"
+  `(base ,(remove nil
+                  (list (when url `(href . ,url))
+                        (when target `(target . ,target))))))
+
+(defun esxml-head-link (relationship mime-type url &optional misc-attrs)
+  "The LINK element.
+RELATIONSHIP is the relationship of the link, as a symbol
+MIME_TYPE is the mime-type of the link as a string,
+URL is the url of the link
+MISC-ATTRS is any additional attributes, as an alist"
+  `(link ((rel . ,(symbol-name relationship))
+          (type . ,mime-type)
+          (href . ,url)
+          ,@misc-attrs)))
+
+(defun esxml-head-css-link (url)
+  "The LINK element for CSS.
+As this is a common usage this conveniance function for
+`esxml-head-link' for linking to stylesheets.
+URL is the location of the CSS"
+  (esxml-head-link 'stylesheet "text/css" url))
+
+(defun esxml-head-meta (directive content &optional http-equiv)
+  "The META element.  Only supports content and either http-equiv
+or name.
+
+DIRECTIVE is a symbol that supplied to name unless HTTP-EQUIV is non-nil, in
+which case it the value of http-equiv.
+Content is the content
+
+Example:
+> (esxml-head-meta 'keyword \"cool, awesome, unignorable\")
+  (meta ((name . \"keyword\")
+         (content . \"cool, awesome, unignorable\")))
+
+> (esxml-head-meta 'content-type \"text/html\" t)
+  (meta ((http-equiv . \"content-type\")
+         (content . \"text/html\")))"
+  `(meta ((,(if http-equiv 'http-equiv 'name) . ,(symbol-name directive))
+          (content . ,content))))
+
+(defun esxml-head-script (url &optional script)
+  "A presumptious version of the head script element.  You always
+use js, right?  Good.  Now that that's settled...
+
+URL is the url of the script, if for some reason you want to
+include a script in the file, set this to nil.
+
+SCRIPT is the script as a string.  Will not be used if URL is non-nil"
+  `(script (,@(when url `((src . ,url)))
+            (type . "text/javascript"))
+           ,@(unless url (list script))))
+
+(defun esxml-head-style (css)
+  "The style head element.  CSS is a string containing valid
+CSS."
+  `(style ((type . "text/css"))
+          ,css))
+
+(defun esxml--head (title &rest body)
+  `(head ()
+         (title () ,title)
+         ,@body))
+
+(defmacro esxml-head (title &rest body)
+  "DSL for writing the HEAD element of html.
+Required argument TITLE is the title of the page as a string.
+Within the BODY the following functions are aliased:
+
+ base     `esxml-head-base'
+ link     `esxml-head-link'
+ css-link `esxml-head-css-link'
+ meta     `esxml-head-meta'
+ script   `esxml-head-script'
+ style    `esxml-head-style'
+
+Additionally, one may also include arbitrary esxml (and
+esxml-generation), within BODY
+"
+  (declare (indent 1))
+  `(letf ,(kvmap-bind (symbol value)
+              `((symbol-function ',symbol) ,value)
+            '((base 'esxml-head-base)
+              (link 'esxml-head-link)
+              (css-link 'esxml-head-css-link)
+              (meta 'esxml-head-meta)
+              (script 'esxml-head-script)
+              (style 'esxml-head-style)))
+     (esxml--head ,title ,@body)))
+
+(esxml-head "Title Text"
+  (base "http://this.url/resources/")
+  (css-link "some.css")
+  (meta 'keyword "cool, awesome, unignorable")
+  (meta 'content-type "text/html" t)
+  (script "example-script.js"))
 
 
 
@@ -284,7 +407,7 @@ VALUE is optional, if it's supplied whatever is supplied is used.
 VALUE.  KEY should be a symbol, and VALUE should be a string.
 Will not recurse below a match."
   (unless (stringp esxml)
-    (destructuring-bind (tag attrs &rest body) esxml 
+    (destructuring-bind (tag attrs &rest body) esxml
       (if (equal value
                  (assoc-default key attrs))
           (list esxml)
@@ -296,7 +419,7 @@ Will not recurse below a match."
   "Returns a list of all elements whose tag is a member of TAGS.
 TAGS should be a list of tags to be matched against. Will not
 recurse below a match."
-  (unless (stringp esxml) 
+  (unless (stringp esxml)
     (let ((tag (car esxml))
           (attrs (cadr esxml))
           (body (cddr esxml)))
