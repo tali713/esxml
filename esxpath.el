@@ -20,22 +20,13 @@
 
 ;;; Commentary:
 
-;; 
+;;
 
 ;;; Code:
 (require 'esxml)
 
 
 ;;probable call
-
-(defvar test-sheet
-  (sxml-to-esxml '(bookstore
-                   (book
-                    (title (@ (lang "eng")) "Harry Potter")
-                    (price  "29.99"))
-                   (book
-                    (title (@ (lang "eng")) "Learning XML")
-                    (price  "39.95")))))
 
 (defmacro esxpath-transform (pathspec)
   (pcase pathspec
@@ -44,7 +35,7 @@
     (`(,(and root (pred symbolp)) ,(and body (pred symbolp)))
      `(if (eq ',root (car ,body)) (nthcdr 2 ,body)))
     (`(,(and node (pred symbolp)) ,(and body (pred consp)))
-     `(remove-if-not (apply-partially 'esxpath-tag-p ',node) 
+     `(remove-if-not (apply-partially 'esxpath-tag-p ',node)
                      (esxpath-transform ,body)))
     (_ pathspec)))
 
@@ -58,50 +49,7 @@
         (car test-sheet))
       (list test-sheet))))
 
-(defmacro plambda (&rest pcases)
-  (declare (indent defun))
-  (let ((args (gensym "args")))
-    `(lambda (,args)
-       (pcase ,args ,@pcases))))
 
-
-(defun esxpath-tag-p (tag esxml)
-  (and (consp esxml)
-       (eq tag (car esxml))))
-
-(defun esxpath-attrs-match (test-attrs esxml)
-  (pcase-let ((`(,_ ,attrs . ,_) esxml))
-    (every (plambda
-             (`(,key . ,(pred stringp)) (equal (assoc-default key test-attrs)
-                                               (assoc-default key attrs)))
-             (x (error "Unhandled attr: %s" x)))
-           test-attrs)))
-
-(defun esxpath-select-root (root esxml)
-  "Returns the root node as a node-set if it matches ROOT.
-ROOT is a symbol, the tag of the root node."
-  (if (esxpath-tag-p root esxml) (list esxml)))
-
-(defun esxpath-get-children (esxml)
-  (pcase esxml
-    (`(,_ ,_ . ,body) body)))
-
-(defun on-nodeset (function)
-  (lambda (node-set)
-    (apply 'append (mapcar function node-set))))
-
-(defalias 'esxpath-select-children (on-nodeset 'esxpath-get-children))
-
-(defun esxpath-select (tag &optional attrs node-set)
-  (declare (advertised-calling-convention '(tag [attrs] node-set) ""))
-  (let* ((node-set (or node-set (prog1 attrs (setq attrs nil))))
-         (filter (cond ((and tag attrs)
-                        (lambda (node)
-                          (and (esxpath-tag-p tag node)
-                               (esxpath-attrs-match attrs node))))
-                       (tag (lambda (node) (esxpath-tag-p tag node)))
-                       (attrs (lambda (node) (esxpath-attrs-match attrs node))))))
-    (remove-if-not filter node-set)))
 
 (defun esxpath-child-p (child-node parent-node)
   (find child-node (esxpath-get-children parent-node)))
@@ -111,19 +59,6 @@ ROOT is a symbol, the tag of the root node."
       (let ((children (esxpath-get-children ancestor-node)))
         (if children (every (apply-partially 'esxpath-descendent-p descendent-node)
                             children)))))
-
-(defun esxpath-has-child (pred)
-  (lambda (node)
-    (any pred (esxpath-get-children node))))
-
-(defun esxpath-select-with-child (pred)
-  (lambda (node-set)
-    (remove-if-not (esxpath-has-child pred)
-                   node-set)))
-
-
-(defun esxpath-select-from-children (tag attrs node-set)
-  (esxpath-select tag attrs (esxpath-select-children node-set)))
 
 
 
@@ -139,10 +74,10 @@ ROOT is a symbol, the tag of the root node."
      `(,key ,(esxpath-fill-missing-attributes pathspec)))
 
     (`(,key
-       ,(and pathspec (pred consp)))                 
+       ,(and pathspec (pred consp)))
      `(,key () ,(esxpath-fill-missing-attributes pathspec)))
 
-    (`(,key)                 
+    (`(,key)
      `(,key ()))
 
     (_ pathspec)))
@@ -179,10 +114,136 @@ ROOT is a symbol, the tag of the root node."
 (funcall (esxpath (bookstore (book)))
          test-sheet)
 
+;; ABOVE HERE DISCARD
+
 
 
 
+(defvar test-sheet
+  (sxml-to-esxml '(bookstore
+                   (book
+                    (title (@ (lang "eng")) "Harry Potter")
+                    (price  "29.99"))
+                   (book
+                    (title (@ (lang "eng")) "Learning XML")
+                    (price  "39.95")))))
 
+(defmacro plambda (&rest pcases)
+  (declare (indent defun))
+  (let ((args (gensym "args")))
+    `(lambda (,args)
+       (pcase ,args ,@pcases))))
+
+(defun esxpath-tag-p (tag esxml)
+  (and (consp esxml)
+       (eq tag (car esxml))))
+
+(defvar test-sheet2
+  '(tag ((attr1 . "foo")
+         (attr2 . "bar")
+         (attr3 . "3"))))
+
+(defun esxpath-attrs-match (test-attrs esxml)
+  (pcase-let ((`(,_ ,attrs . ,_) esxml))
+    (every (plambda
+             (`(,key . ,(pred stringp)) (equal (assoc-default key test-attrs)
+                                               (assoc-default key attrs)))
+             (`(,key . (,op ,n)) (funcall op
+                                          (string-to-number (assoc-default key attrs))
+                                          n))
+             (x (error "Unhandled attr: %s" x)))
+           test-attrs)))
+
+(defun esxpath-match (tag test-attrs esxml)
+  (and (if tag (esxpath-tag-p tag esxml) t)
+       (if test-attrs (esxpath-attrs-match test-attrs esxml) t)))
+
+
+(defun on-nodeset (function)
+  (lambda (node-set)
+    (apply 'append (mapcar function node-set))))
+
+(defun esxpath-select-root (root attrs esxml)
+  "Returns the root node as a node-set if it matches ROOT.
+ROOT is a symbol, the tag of the root node."
+  (if (esxpath-match root attrs esxml)
+      (list esxml)))
+
+(ert-deftest esxpath-select-root ()
+  "testing select-root"
+  (should (equal (esxpath-select-root nil nil test-sheet)
+                 '((bookstore nil
+                              (book nil
+                                    (title
+                                     ((lang . "eng"))
+                                     "Harry Potter")
+                                    (price nil "29.99"))
+                              (book nil
+                                    (title
+                                     ((lang . "eng"))
+                                     "Learning XML")
+                                    (price nil "39.95"))))))
+  (should (equal (esxpath-select-root 'bookstore nil test-sheet)
+                 '((bookstore nil
+                              (book nil
+                                    (title
+                                     ((lang . "eng"))
+                                     "Harry Potter")
+                                    (price nil "29.99"))
+                              (book nil
+                                    (title
+                                     ((lang . "eng"))
+                                     "Learning XML")
+                                    (price nil "39.95"))))))
+  (should (equal (esxpath-select-root 'foo nil test-sheet)
+                 nil)))
+
+(defun esxpath-select (tag attrs node-set)
+  (remove-if-not (apply-partially 'esxpath-match tag attrs) node-set))
+
+(defun esxpath-get-children (esxml)
+  (pcase esxml (`(,_ ,_ . ,body) body)))
+
+(defalias 'esxpath-select-children (on-nodeset 'esxpath-get-children))
+
+(defun esxpath-select-from-children (tag attrs node-set)
+  (esxpath-select tag attrs (esxpath-select-children node-set)))
+
+(ert-deftest esxpath-select-from-children ()
+  (should (equal (esxpath-select-from-children 'book nil
+                                               (esxpath-select-root nil nil test-sheet))
+                 '((book nil
+                         (title
+                          ((lang . "eng"))
+                          "Harry Potter")
+                         (price nil "29.99"))
+                   (book nil
+                         (title
+                          ((lang . "eng"))
+                          "Learning XML")
+                         (price nil "39.95")))))
+  (should (equal (esxpath-select-from-children nil '((lang . "eng"))
+                                               (esxpath-select-from-children
+                                                'book nil
+                                                (esxpath-select-root nil nil test-sheet)))
+                 '((title
+                    ((lang . "eng"))
+                    "Harry Potter")
+                   (title
+                    ((lang . "eng"))
+                    "Learning XML")))))
+
+(defun esxpath-has-child (pred node)
+  (and (member-if pred (esxpath-get-children node))
+       node))
+
+(esxpath-has-child (apply-partially 'esxpath-match 'book nil)
+                   test-sheet)
+
+(defun esxpath-select-with-child (pred)
+  (lambda (node-set)
+    (remove-if-not (apply-partially 'esxpath-has-child pred)
+                   node-set)))
 
 (provide 'esxpath)
 ;;; esxpath.el ends here
