@@ -4,7 +4,7 @@
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.2.1
+;; Version: 0.2.3
 ;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
@@ -392,6 +392,7 @@ esxml-generation), within BODY
 
 
 
+;; TODO: make agnostic with respect to libxml vs xml.el
 (defun xml-to-esxml (string &optional trim)
   (with-temp-buffer
     (insert string)
@@ -401,6 +402,7 @@ esxml-generation), within BODY
           (esxml-trim-ws parse-tree)
         parse-tree))))
 
+;; TODO, move to esxpath when mature
 (defun esxml-get-by-key (esxml key value)
   "Returns a list of all elements whose wttribute KEY match
 VALUE.  KEY should be a symbol, and VALUE should be a string.
