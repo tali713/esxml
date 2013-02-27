@@ -49,6 +49,7 @@
   (require 'cl))
 (require 'xml)
 (require 'kv)
+(require 'pcase)
 
 (defun string-trim-whitespace (string)
   "A simple function, strips the whitespace from beginning and
