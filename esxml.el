@@ -262,8 +262,8 @@ instead creates an ordered list.  If ITEM-ATTRS is non-nil it
 specifies attributes to apply to each item.  ITEM-ATTRS must be
 an alist satisfying `attrsp'."
   `(,(if ordered-p 'ol 'ul) ()
-    ,@(kvmap-bind body
-          `(li () ,@body)
+    ,@(kvmap-bind item
+          `(li () ,item)
         body)))
 
 (defun esxml-create-bookmark-list (bookmark-list seperator &optional ordered-p)
