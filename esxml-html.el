@@ -87,29 +87,31 @@ an alist satisfying `attrsp'."
         body)))
 
 (defun esxml-head-base (url &optional target)
-  "The BASE element.
-URL is the base url of the page, if non-nil.
-TARGET is the base target, if non-nil"
+  "The HTML <base> element.
+
+URL is the base url of the page, if non-nil.  TARGET is the base
+target, if non-nil"
   `(base ,(remove nil
                   (list (when url `(href . ,url))
                         (when target `(target . ,target))))))
 
 (defun esxml-head-link (relationship mime-type url &optional misc-attrs)
-  "The LINK element.
+  "The HTML <link> element.
 RELATIONSHIP is the relationship of the link, as a symbol
-MIME_TYPE is the mime-type of the link as a string,
-URL is the url of the link
-MISC-ATTRS is any additional attributes, as an alist"
+MIME_TYPE is the mime-type of the link as a string, URL is the
+url of the link MISC-ATTRS is any additional attributes, as an
+alist"
   `(link ((rel . ,(symbol-name relationship))
           (type . ,mime-type)
           (href . ,url)
           ,@misc-attrs)))
 
 (defun esxml-head-css-link (url)
-  "The LINK element for CSS.
+  "The HTML <link> element for CSS.
+
 As this is a common usage this conveniance function for
-`esxml-head-link' for linking to stylesheets.
-URL is the location of the CSS"
+`esxml-head-link' for linking to stylesheets.  URL is the
+location of the CSS."
   (esxml-head-link 'stylesheet "text/css" url))
 
 (defun esxml-head-meta (directive content &optional http-equiv)
@@ -132,10 +134,11 @@ Example:
           (content . ,content))))
 
 (defun esxml-head-script (url &optional script)
-  "A presumptious version of the head script element.  You always
-use js, right?  Good.  Now that that's settled...
+  "A presumptious version of the HTML head script element.
 
-URL is the url of the script, if for some reason you want to
+You always use js, right?  Good.  Now that that's settled...
+
+URL is the URL of the script, if for some reason you want to
 include a script in the file, set this to nil.
 
 SCRIPT is the script as a string.  Will not be used if URL is non-nil"
@@ -144,8 +147,9 @@ SCRIPT is the script as a string.  Will not be used if URL is non-nil"
            ,@(unless url (list script))))
 
 (defun esxml-head-style (css)
-  "The style head element.  CSS is a string containing valid
-CSS."
+  "The HTML <style> <head> element.
+
+The argument CSS is a string containing valid CSS."
   `(style ((type . "text/css"))
           ,css))
 
@@ -155,7 +159,7 @@ CSS."
          ,@body))
 
 (defmacro esxml-head (title &rest body)
-  "DSL for writing the HEAD element of html.
+  "DSL for writing the HEAD element of HTML.
 Required argument TITLE is the title of the page as a string.
 Within the BODY the following functions are aliased:
 
