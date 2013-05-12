@@ -51,14 +51,14 @@
 
 
 
-(defun esxpath-child-p (child-node parent-node)
-  (find child-node (esxpath-get-children parent-node)))
+;; (defun esxpath-child-p (child-node parent-node)
+;;   (find child-node (esxpath-get-children parent-node)))
 
-(defun esxpath-descendent-p (descendent-node ancestor-node)
-  (or (esxpath-child-p descendent-node ancestor-node)
-      (let ((children (esxpath-get-children ancestor-node)))
-        (if children (every (apply-partially 'esxpath-descendent-p descendent-node)
-                            children)))))
+;; (defun esxpath-descendent-p (descendent-node ancestor-node)
+;;   (or (esxpath-child-p descendent-node ancestor-node)
+;;       (let ((children (esxpath-get-children ancestor-node)))
+;;         (if children (every (apply-partially 'esxpath-descendent-p descendent-node)
+;;                             children)))))
 
 
 
@@ -236,6 +236,7 @@ ROOT is a symbol, the tag of the root node."
 (defun esxpath-has-child (pred node)
   (and (member-if pred (esxpath-get-children node))
        node))
+
 
 (esxpath-has-child (apply-partially 'esxpath-match 'book nil)
                    test-sheet)

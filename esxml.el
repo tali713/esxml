@@ -4,7 +4,7 @@
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.2.3
+;; Version: 0.3.0
 ;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
@@ -39,7 +39,7 @@
 ;;
 ;; TODO: Better documentation, more conveniance.
 ;;
-;; NOTICE: Code base will be trasnitioning to using pcase instead of
+;; NOTICE: Code base will be transitioning to using pcase instead of
 ;; destructuring bind wherever possible.  If this leads to hard to
 ;; debug code, please let me know, and I will do whatever I can to
 ;; resolve these issues.
@@ -124,9 +124,10 @@ it suitable for hindsight testing."
     (pcase-let ((`(,tag ,attrs . ,body) esxml))
       ;; code goes here to catch invalid data.
       (concat "<" (symbol-name tag)
-              (when attrs (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
+              (when attrs
+                (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
               (if body
-                  (concat ">" (mapconcat 'esxml-to-xml body "")
+                  (concat ">" (mapconcat 'esxml--to-xml-recursive body "")
                           "</" (symbol-name tag) ">")
                 "/>")))))
 

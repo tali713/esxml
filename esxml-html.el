@@ -35,6 +35,7 @@
 ;;; Code:
 (eval-when-compile
   (require 'cl))
+(require 'esxml)
 (require 'xml)
 (require 'kv)
 (require 'pcase)
