@@ -4,7 +4,7 @@
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.3.0
+;; Version: 0.3.1
 ;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
@@ -278,9 +278,7 @@ Will not recurse below a match."
 TAGS should be a list of tags to be matched against. Will not
 recurse below a match."
   (unless (stringp esxml)
-    (let ((tag (car esxml))
-          (attrs (cadr esxml))
-          (body (cddr esxml)))
+    (pcase-let ((`(,tag ,attrs . ,body) esxml))
       (if (member tag tags)
           (list esxml)
         (apply 'append (mapcar (lambda (sexp)

@@ -4,7 +4,7 @@
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.2.3
+;; Version: 0.3.0
 ;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: esxml convenience functions for certain HTML elements
