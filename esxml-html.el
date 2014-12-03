@@ -75,17 +75,17 @@ VALUE is optional, if it's supplied whatever is supplied is used.
              ;; textareas require a body all the time
              ,@(if content (list content) "")))
 
-(defun esxml-listify (body &optional ordered-p item-attrs)
-  "Transforms a list of esxml forms into an unordered HTML list.
+(defun esxml-listify (bodys &optional ordered-p item-attrs)
+  "Transforms a list of esxml body forms into an unordered HTML list.
 
-BODY is a list of esxml expressions.  If ORDERED-P is non-nil,
+BODYS is a list of esxml bodies.  If ORDERED-P is non-nil,
 instead creates an ordered list.  If ITEM-ATTRS is non-nil it
 specifies attributes to apply to each item.  ITEM-ATTRS must be
 an alist satisfying `attrsp'."
   `(,(if ordered-p 'ol 'ul) ()
     ,@(kvmap-bind item
-          `(li () ,item)
-        body)))
+          `(li () ,@item)
+        bodys)))
 
 (defun esxml-head-base (url &optional target)
   "The HTML <base> element.
@@ -191,6 +191,46 @@ e.g.
               (script 'esxml-head-script)
               (style 'esxml-head-style)))
      (esxml--head ,title ,@body)))
+
+;;; Some generators for common problems
+;; Tabular and listed data are common patterns, so rather than do
+;; something like:
+;; (esxml-to-xml
+;;  `(html ()
+;;         (body ()
+;;               ,@(mapcar (lambda (url-entry)
+;;                           (destructuring-bind (url name)
+;;                               `(li ()
+;;                                    (a ((href . ,url))
+;;                                       ,name))))))))
+;; we should instead define this cleanly.
+
+(defun esxml-create-bookmark-list (bookmark-list seperator &optional ordered-p)
+"Example:
+  (setq bookmark-list
+        '((\"http://www.emacswiki.org\" \"Emacs Wiki\" \"Accept no substitutes\")
+          (\"http://www.github.com/\" \"Github\")
+          (\"http://www.google.com\" \"Google\" \"Everyones favorite search engine\")))
+
+  (esxml-to-xml (esxml-create-bookmark-list bookmark-list \": \"))"
+  (esxml-listify (kvmap-bind (url name &optional description)
+                           `(,(esxml-link url name)
+                             ,@(when description
+                                 `(,seperator ,description)))
+                           bookmark-list)
+                 ordered-p))
+Example
+(setq bookmark-list
+      '(("http://www.emacswiki.org" "Emacs Wiki" "Accept no substitutes")
+        ("http://www.github.com/" "Github")
+        ("http://www.google.com" "Google" "Everyones favorite search engine")))
+
+(esxml-to-xml (esxml-create-bookmark-list bookmark-list ": "))
+
+;; hint, at this point it may be wise to consider breaking this out as
+;; a seperate web library.
+
+
 
 (provide 'esxml-html)
 ;;; esxml-html.el ends here
