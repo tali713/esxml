@@ -209,45 +209,6 @@ factor. :)"
   (esxml-to-xml (sxml-to-esxml sxml)))
 
 
-;;; Some generators for common problems
-;; Tabular and listed data are common patterns, so rather than do
-;; something like:
-;; (esxml-to-xml
-;;  `(html ()
-;;         (body ()
-;;               ,@(mapcar (lambda (url-entry)
-;;                           (destructuring-bind (url name)
-;;                               `(li ()
-;;                                    (a ((href . ,url))
-;;                                       ,name))))))))
-;; we should instead define this cleanly.
-
-(defun esxml-create-bookmark-list (bookmark-list seperator &optional ordered-p)
-"Example:
-  (setq bookmark-list
-        '((\"http://www.emacswiki.org\" \"Emacs Wiki\" \"Accept no substitutes\")
-          (\"http://www.github.com/\" \"Github\")
-          (\"http://www.google.com\" \"Google\" \"Everyones favorite search engine\")))
-
-  (esxml-to-xml (esxml-create-bookmark-list bookmark-list \": \"))"
-  (esxml-listify (kvmap-bind (url name &optional description)
-                           `(,(esxml-link url name)
-                             ,@(when description
-                                 `(,seperator ,description)))
-                           bookmark-list)
-                 ordered-p))
-;;; Example
-;; (setq bookmark-list
-;;       '(("http://www.emacswiki.org" "Emacs Wiki" "Accept no substitutes")
-;;         ("http://www.github.com/" "Github")
-;;         ("http://www.google.com" "Google" "Everyones favorite search engine")))
-
-;; (esxml-to-xml (esxml-create-bookmark-list bookmark-list ": "))
-
-;; hint, at this point it may be wise to consider breaking this out as
-;; a seperate web library.
-
-
 
 ;; TODO: make agnostic with respect to libxml vs xml.el
 (defun xml-to-esxml (string &optional trim)
