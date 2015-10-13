@@ -83,7 +83,7 @@ general use."
     (check-type cdr string)
     (concat (symbol-name car)
             "="
-            (prin1-to-string (cdr attr)))))
+            (prin1-to-string cdr))))
 
 (defun attrsp (attrs)
     "Returns t if attrs is a list of esxml attributes.
