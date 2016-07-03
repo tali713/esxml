@@ -5,7 +5,6 @@
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
 ;; Version: 0.3.1
-;; Package-Requires: ((kv "0.0.5"))
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
 ;;
@@ -48,7 +47,6 @@
 (eval-when-compile
   (require 'cl))
 (require 'xml)
-(require 'kv)
 (require 'pcase)
 
 (defun string-trim-whitespace (string)
@@ -250,7 +248,13 @@ recurse below a match."
   "Returns a list of all forms."
   (esxml-get-tags esxml '(form)))
 
-(defalias 'esxml-destructuring-mapcar 'kvmap-bind)
+;; taken from kv
+(defmacro esxml-destructuring-mapcar (args sexp seq)
+  (declare (indent 2))
+  (let ((entry (make-symbol)))
+    `(mapcar (lambda (,entry)
+               (destructuring-bind ,args ,entry ,sexp))
+             ,seq)))
 
 (provide 'esxml)
 ;;; esxml.el ends here
