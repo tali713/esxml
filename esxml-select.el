@@ -47,6 +47,7 @@
 ;;     (td ((class . "key")) "Bar")
 ;;     (td ((class . "value")) "2")))))
 
+;; TODO: these helpers should be part of esxml.el
 (defun esxml-branchp (node)
   (and (listp node)
        (>= (length node) 2)
@@ -69,14 +70,18 @@
   (and (esxml-branchp node)
        (append (cl-subseq node 0 2) children)))
 
+;; TODO: write esxml-find-node and esxml-find-nodes without zippers
+;; NOTE: this could be implemented in terms of pre-order tree traversal
+
+;; preorder(node)
+;;   if (node = null)
+;;     return
+;;   visit(node)
+;;   preorder(node.left)
+;;   preorder(node.right)
+
 (defun esxml-zipper (root)
   (treepy-zipper 'esxml-branchp 'esxml-node-children 'esxml-make-node root))
-
-(esxml-branchp my-tree)
-(esxml-node-tag my-tree)
-(esxml-node-attributes my-tree)
-(esxml-node-children my-tree)
-(esxml-branchp (car (esxml-node-children my-tree)))
 
 (defvar my-zipper (esxml-zipper my-tree))
 
@@ -131,10 +136,11 @@
          (escape (format "\\(?:%s\\)\\|\\[ -~\200-\U0010ffff]" unicode))
          (nmstart (format "[a-z]\\|%s\\|\\(?:%s\\)" nonascii escape))
          (nmchar (format "[a-z0-9-]\\|%s\\|\\(?:%s\\)" nonascii escape))
-         (num "[0-9]+\\|[0-9]*\.[0-9]+")
+         (num "[0-9]+\\|[0-9]*\\.[0-9]+")
          (string1 (format "\"\\(?:[\t !#$%%&(-~]\\|\\(?:%s\\)\\|\'\\|%s\\|\\(?:%s\\)\\)*\"" nl nonascii escape))
          (string2 (format "'\\(?:[\t !#$%%&(-~]\\|\\(?:%s\\)\\|\"\\|%s\\|\\(?:%s\\)\\)*'" nl nonascii escape))
          (ident (format "[-]?\\(?:%s\\)\\(?:%s\\)*" nmstart nmchar))
+         (unit (format "[-]?\\(?:%s\\)\\(?:%s\\)+" nmstart nmchar))
          (name (format "\\(?:%s\\)+" nmchar)))
 
     `((whitespace . "[ \t\r\n\f]+")
@@ -143,7 +149,7 @@
       (hash . ,(format "#%s" name))
       (function . ,(format "%s(" ident))
       (number . ,num)
-      (dimension . ,(format "\\(?:%s\\)%s" num ident))
+      (dimension . ,(format "\\(?:%s\\)%s" num unit))
       (prefix-match . "\\^=")
       (suffix-match . "\\$=")
       (substring-match . "\\*=")
@@ -154,7 +160,6 @@
       (plus . "\\+")
       (minus . "-")
       (tilde . "~")
-      (slash . "/")
       (asterisk . "\\*")
       (period . "\\.")
       (equals . "=")
@@ -187,25 +192,9 @@
           (goto-char (+ (point) max-length)))))
     (nreverse result)))
 
-(esxml-tokenize-css-selector "#content .gallery > a[href$='foo']")
-
-;; ((hash . "#content")
-;;  (whitespace . " ")
-;;  (other . ".")
-;;  (ident . "gallery")
-;;  (whitespace . " ")
-;;  (other . ">")
-;;  (whitespace . " ")
-;;  (ident . "a")
-;;  (other . "[")
-;;  (ident . "href")
-;;  (suffix-match . "$=")
-;;  (string . "'foo'")
-;;  (other . "]"))
-
-;; the other alternative is creating a mutable object with peek/next
-;; methods and passing it around, so I chose the one requiring less
-;; typing, a dynamically bound variable :<
+;; the alternative is creating a mutable object with peek/next methods
+;; and passing it around, so I chose the one requiring less typing, a
+;; dynamically bound variable :<
 
 (defvar esxml-token-stream)
 
@@ -243,9 +232,6 @@
 ;; css-expression:
 ;;   '+' | '-' | DIMENSION | NUMBER | STRING | IDENT
 
-;; TODO: make this nicer to read with helpers
-;; NOTE: accept/expect, peek/next, consume-whitespace
-
 (defmacro esxml-with-parse-shorthands (&rest body)
   `(cl-macrolet ((peek () '(car esxml-token-stream))
                  (next () '(pop esxml-token-stream))
@@ -256,6 +242,8 @@
 (def-edebug-spec esxml-with-parse-shorthands (body))
 
 ;; TODO: error out on unsupported constructs like commas
+;; TODO: error out on illegal constructs such as more than one ID per compound
+;; TODO: error out on invalid pseudo-class arguments
 (defun esxml-parse-css-selector (string)
   (let* ((esxml-token-stream (esxml-tokenize-css-selector string))
          (result (esxml-parse-css-selector-list)))
@@ -266,25 +254,36 @@
 
 (defun esxml-parse-css-selector-list ()
   (esxml-with-parse-shorthands
-   (let ((result (list (esxml-parse-complex-css-selector))))
+   (let ((first (esxml-parse-complex-css-selector))
+         result)
+     (when (not first)
+       (error "Expected at least one selector"))
+     (push first result)
+
      (while (accept 'comma)
        (eat-whitespace)
-       (push (esxml-parse-complex-css-selector) result))
+       (let ((selector (esxml-parse-complex-css-selector)))
+         (when (not selector)
+           (error "Expected selector after comma"))
+         (push selector result)))
      (nreverse result))))
 
 (defun esxml-parse-complex-css-selector ()
   (esxml-with-parse-shorthands
-   (let ((result (list (esxml-parse-compound-css-selector)))
-         done)
-     (while (not done)
-       (let ((combinator (esxml-parse-css-combinator)))
-         (if combinator
-             (let ((compound (esxml-parse-compound-css-selector)))
-               (if compound
-                   (setq result (append (list compound combinator) result))
-                 (error "Trailing combinator")))
-           (setq done t))))
-     (nreverse result))))
+   (let ((first (esxml-parse-compound-css-selector))
+         result done)
+     (when first
+       (push first result)
+
+       (while (not done)
+         (let ((combinator (esxml-parse-css-combinator)))
+           (if combinator
+               (let ((compound (esxml-parse-compound-css-selector)))
+                 (if compound
+                     (setq result (append (list compound combinator) result))
+                   (error "Trailing combinator")))
+             (setq done t))))
+       (nreverse result)))))
 
 (defun esxml-parse-css-combinator ()
   (esxml-with-parse-shorthands
@@ -300,15 +299,14 @@
          (next)
          (cond
           ((eq type 'gt)
-           (setq result 'child))
+           (setq result '((combinator . child))))
           ((eq type 'plus)
-           (setq result 'direct-sibling))
+           (setq result '((combinator . direct-sibling))))
           ((eq type 'tilde)
-           (setq result 'indirect-sibling)))
-              (while (accept 'whitespace))
+           (setq result '((combinator . indirect-sibling)))))
          (eat-whitespace))
         (leading-whitespace-p
-         (setq result 'descendant))
+         (setq result '((combinator . descendant))))
         (t nil)))
      result)))
 
@@ -317,14 +315,15 @@
    (let ((type-selector (esxml-parse-css-type-selector))
          done
          result)
-     ;; css-type-selector css-modifier* | css-modifier+; is equivalent to:
-     ;; [ css-type-selector | css-modifier ] css-modifier*;
+     ;; NOTE: css-type-selector css-modifier* | css-modifier+; is
+     ;; equivalent to: [ css-type-selector | css-modifier ] css-modifier*;
      (if type-selector
          (push type-selector result)
        (let ((modifier (esxml-parse-css-modifier)))
-         (when (not modifier)
-           (error "Expected at least one modifier for compound selector without tag"))
-         (push modifier result)))
+         (if modifier
+           (push modifier result)
+           ;; NOTE: this allows the trailing combinator error to be thrown
+           (setq done t))))
 
      (while (not done)
        (let ((modifier (esxml-parse-css-modifier)))
@@ -373,7 +372,7 @@
        (let ((name (esxml-parse-css-attrib-name)))
          (when (not name)
            (error "Expected attribute name"))
-         (push (cons 'attribute name) result)
+         (push (cons 'name name) result)
          (when (not (accept 'rbracket))
            (let ((match (esxml-parse-css-attrib-match)))
              (when (not match)
@@ -384,8 +383,8 @@
                (eat-whitespace)
                (when (not (accept 'rbracket))
                  (error "Unterminated attribute"))
-               (push (cons match value) result))))))
-     (nreverse result))))
+               (push (cons match value) result)))))
+       (cons 'attribute (nreverse result))))))
 
 (defun esxml-parse-css-attrib-name ()
   (esxml-with-parse-shorthands
@@ -437,14 +436,14 @@
              (if (eq type 'pseudo-class)
                  (let ((value (car functional))
                        (args (cdr functional)))
-                   (push (cons type value) result)
+                   (push (cons 'name value) result)
                    (push (cons 'args args) result))
                (error "Pseudo-elements may not have arguments"))
            (let ((value (accept 'ident)))
              (if value
-                 (push (cons type value) result)
-               (error "Expected function or identifier"))))))
-     (nreverse result))))
+                 (push (cons 'name value) result)
+               (error "Expected function or identifier")))))
+       (cons type (nreverse result))))))
 
 (defun esxml-parse-css-functional-pseudo ()
   (esxml-with-parse-shorthands
@@ -467,17 +466,17 @@
                  (eat-whitespace))
              (setq done t))))
        (when (not (accept 'rparen))
-         (error "Unterminated function argument list")))
-     (nreverse result))))
+         (error "Unterminated function argument list"))
+       (nreverse result)))))
 
 (defun esxml-parse-css-expression ()
   (esxml-with-parse-shorthands
    (let ((token (peek)))
      (cond
       ((accept 'plus)
-       '(ident . plus))
+       '(operator . +))
       ((accept 'minus)
-       '(ident . minus))
+       '(operator . -))
       ((eq (car token) 'dimension)
        (next)
        (cons 'dimension (cdr token)))
@@ -492,7 +491,4 @@
        (cons 'ident (cdr token)))
       (t nil)))))
 
-(esxml-parse-css-selector "foo + bar#baz.qux.quux")
-(esxml-parse-css-selector "#content .gallery > a")
-(esxml-parse-css-selector "#content .gallery > a[href$='foo']")
-(esxml-parse-css-selector "#content .gallery > a[href$='foo']:nth-child(2a)")
+(provide 'esxml-select)
