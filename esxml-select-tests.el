@@ -167,3 +167,36 @@
                        (operator . -)
                        (number . 1))))))))
   (should-error (esxml-parse-css-selector ":foo(bar")))
+
+(defvar my-document
+  "<!DOCTYPE html>
+<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\">
+  <head>
+    <meta charset=\"utf-8\" />
+    <link rel=\"self\" />
+    <title>Foobar</title>
+  </head>
+  <body>
+    <table>
+      <tr class=\"even\">
+        <td class=\"key\">Foo</td>
+        <td class=\"value\">1</td>
+      </tr>
+      <tr class=\"odd\">
+        <td class=\"key\">Bar</td>
+        <td class=\"value\">2</td>
+      </tr>
+    </table>
+  </body>
+</html>")
+
+(defvar my-tree (xml-to-esxml my-document))
+
+(esxml-find-node
+ (lambda (node)
+   (and (eq (esxml-node-tag node) 'tr)
+        (equal (cdr (assoc 'class (esxml-node-attributes node)))
+               "even")))
+ my-tree)
+
+(esxml-find-nodes (lambda (node) (eq (esxml-node-tag node) 'tr)) my-tree)

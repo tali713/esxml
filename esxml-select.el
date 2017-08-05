@@ -1,124 +1,8 @@
-;; -*- lexical-binding: t; -*-
 (require 'cl-lib)
 (require 'esxml)
-(require 'treepy)
 
-(defvar my-document
-  "<!DOCTYPE html>
-<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\">
-  <head>
-    <meta charset=\"utf-8\" />
-    <link rel=\"self\" />
-    <title>Foobar</title>
-  </head>
-  <body>
-    <table>
-      <tr class=\"even\">
-        <td class=\"key\">Foo</td>
-        <td class=\"value\">1</td>
-      </tr>
-      <tr class=\"odd\">
-        <td class=\"key\">Bar</td>
-        <td class=\"value\">2</td>
-      </tr>
-    </table>
-  </body>
-</html>")
-
-(defvar my-tree (xml-to-esxml my-document))
-
-;; (html
-;;  ((lang . "en"))
-;;  (head
-;;   nil
-;;   (meta ((charset . "utf-8")))
-;;   (link ((rel . "self")))
-;;   (title nil "Foobar"))
-;;  (body
-;;   nil
-;;   (table
-;;    nil
-;;    (tr
-;;     ((class . "even"))
-;;     (td ((class . "key")) "Foo")
-;;     (td ((class . "value")) "1"))
-;;    (tr
-;;     ((class . "odd"))
-;;     (td ((class . "key")) "Bar")
-;;     (td ((class . "value")) "2")))))
-
-;; TODO: these helpers should be part of esxml.el
-(defun esxml-branchp (node)
-  (and (listp node)
-       (>= (length node) 2)
-       (symbolp (car node))
-       (listp (cadr node))))
-
-(defun esxml-node-tag (node)
-  (and (esxml-branchp node)
-       (car node)))
-
-(defun esxml-node-attributes (node)
-  (and (esxml-branchp node)
-       (cadr node)))
-
-(defun esxml-node-children (node)
-  (and (esxml-branchp node)
-       (nthcdr 2 node)))
-
-(defun esxml-make-node (node children)
-  (and (esxml-branchp node)
-       (append (cl-subseq node 0 2) children)))
-
-;; TODO: write esxml-find-node and esxml-find-nodes without zippers
-;; NOTE: this could be implemented in terms of pre-order tree traversal
-
-;; preorder(node)
-;;   if (node = null)
-;;     return
-;;   visit(node)
-;;   preorder(node.left)
-;;   preorder(node.right)
-
-(defun esxml-zipper (root)
-  (treepy-zipper 'esxml-branchp 'esxml-node-children 'esxml-make-node root))
-
-(defvar my-zipper (esxml-zipper my-tree))
-
-(let ((loc my-zipper))
-  (while (not (treepy-end-p loc))
-    (let ((tag (esxml-node-tag (treepy-node loc))))
-      (when tag
-        (message "%s" tag)))
-    (setq loc (treepy-next loc))))
-
-(defun esxml-find-node (root pred)
-  (let ((loc (esxml-zipper root))
-        result
-        done)
-    (while (and (not done) (not (treepy-end-p loc)))
-      (let ((node (treepy-node loc)))
-        (when (funcall pred node)
-          (setq done t)
-          (setq result node)))
-      (setq loc (treepy-next loc)))
-    result))
-
-(esxml-find-node my-tree (lambda (node)
-                           (and (eq (esxml-node-tag node) 'tr)
-                                (equal (cdr (assoc 'class (esxml-node-attributes node))) "even"))))
-
-(defun esxml-find-nodes (root pred)
-  (let ((loc (esxml-zipper root))
-        result)
-    (while (not (treepy-end-p loc))
-      (let ((node (treepy-node loc)))
-        (when (funcall pred node)
-          (push node result)))
-      (setq loc (treepy-next loc)))
-    (nreverse result)))
-
-(esxml-find-nodes my-tree (lambda (node) (eq (esxml-node-tag node) 'tr)))
+
+;;; CSS selector parsing
 
 ;; https://www.w3.org/TR/selectors/#w3cselgrammar
 ;; https://www.w3.org/TR/selectors4/#grammar
@@ -491,4 +375,47 @@
        (cons 'ident (cdr token)))
       (t nil)))))
 
+
+;;; tree traversal
+
+;; TODO: these helpers should be part of esxml.el
+(defun esxml-branch-p (node)
+  (and (listp node)
+       (>= (length node) 2)
+       (symbolp (car node))
+       (listp (cadr node))))
+
+(defun esxml-node-tag (node)
+  (and (esxml-branch-p node)
+       (car node)))
+
+(defun esxml-node-attributes (node)
+  (and (esxml-branch-p node)
+       (cadr node)))
+
+(defun esxml-node-children (node)
+  (and (esxml-branch-p node)
+       (nthcdr 2 node)))
+
+(defun esxml-find-node (pred root)
+  (if (funcall pred root)
+      root
+    (cl-some (lambda (node) (esxml-find-node pred node))
+             (esxml-node-children root))))
+
+(defun esxml-visit-nodes (function root)
+  (funcall function root)
+  (mapc (lambda (node) (esxml-visit-nodes function node))
+        (esxml-node-children root)))
+
+(defun esxml-find-nodes (pred root)
+  (let ((acc '()))
+    (esxml-visit-nodes
+     (lambda (node)
+       (when (funcall pred node)
+         (push node acc)))
+     root)
+    (nreverse acc)))
+
 (provide 'esxml-select)
+;;; esxml-select.el ends here
