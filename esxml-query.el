@@ -1,5 +1,4 @@
 (require 'cl-lib)
-(require 'esxml)
 
 
 ;;; CSS selector parsing
@@ -125,8 +124,6 @@
      ,@body))
 (def-edebug-spec esxml-with-parse-shorthands (body))
 
-;; TODO: error out on unsupported constructs like commas
-;; TODO: error out on illegal constructs such as more than one ID per compound
 ;; TODO: error out on invalid pseudo-class arguments
 (defun esxml-parse-css-selector (string)
   (let* ((esxml-token-stream (esxml-tokenize-css-selector string))
@@ -205,7 +202,7 @@
          (push type-selector result)
        (let ((modifier (esxml-parse-css-modifier)))
          (if modifier
-           (push modifier result)
+             (push modifier result)
            ;; NOTE: this allows the trailing combinator error to be thrown
            (setq done t))))
 
@@ -214,6 +211,8 @@
          (if modifier
              (push modifier result)
            (setq done t))))
+     (when (> (cl-count 'id result :key 'car) 1)
+       (error "Only one id selector allowed per compound"))
      (nreverse result))))
 
 (defun esxml-parse-css-type-selector ()
@@ -416,6 +415,19 @@
          (push node acc)))
      root)
     (nreverse acc)))
+
+
+;;; querying
+
+(defun esxml--query (selector root)
+  selector)
+
+(defun esxml-query (selector root)
+  (when (stringp selector)
+    (setq selector (esxml-parse-css-selector selector)))
+  (when (> (length selector) 1)
+    (error "Comma syntax is unsupported"))
+  (esxml--query (car selector) root))
 
 (provide 'esxml-query)
 ;;; esxml-query.el ends here

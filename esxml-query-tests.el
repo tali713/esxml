@@ -1,3 +1,4 @@
+(require 'esxml)
 (require 'esxml-query)
 (require 'ert)
 
@@ -55,6 +56,7 @@
                       (args
                        (ident . "bar")
                        (ident . "baz"))))))))
+  (should-error (esxml-parse-css-selector "foo#bar#baz"))
   (should (equal (esxml-parse-css-selector "foo[bar=baz][qux=quux]")
                  '((((tag . "foo")
                      (attribute
