@@ -1,4 +1,4 @@
-(require 'esxml-select)
+(require 'esxml-query)
 (require 'ert)
 
 (ert-deftest esxml-parse-css-selector-test ()

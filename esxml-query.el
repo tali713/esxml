@@ -417,5 +417,5 @@
      root)
     (nreverse acc)))
 
-(provide 'esxml-select)
-;;; esxml-select.el ends here
+(provide 'esxml-query)
+;;; esxml-query.el ends here
