@@ -440,6 +440,11 @@
 
 ;;; querying
 
+;; NOTE: supporting structural pseudo functions, direct siblings and
+;; indirect siblings requires breadth instead of depth
+;; traversal, something that could be emulated without zippers if you
+;; had the parent of the node (and the position of the child)...
+
 (defun esxml--find-node-for (attributes)
   (lambda (node)
     (cl-every
@@ -451,11 +456,18 @@
            t)
           ((eq type 'tag)
            (equal (esxml-node-tag node) value))
+          ((eq type 'id)
+           (equal (cdr (assq 'id (esxml-node-attributes node))) value))
+          ((eq type 'class)
+           (let ((class (cdr (assq 'class (esxml-node-attributes node)))))
+             (and class (member value (split-string class " +" t)))))
+          ;; TODO: support attributes
+          ;; TODO: support structural pseudo functions
           (t (error "Unimplemented attribute type: %s" type)))))
      attributes)))
 
 (defun esxml--find-nodes (root combinator attributes &optional allp)
-  (let* ((type (cdr (assoc 'combinator combinator)))
+  (let* ((type (cdr (assq 'combinator combinator)))
          (walker (cond
                  ((not type)
                   'esxml-find-nodes)
@@ -463,6 +475,8 @@
                   (if allp 'esxml-find-descendants 'esxml-find-descendant))
                  ((eq type 'child)
                   (if allp 'esxml-find-children 'esxml-find-child))
+                 ;; TODO: support direct sibling
+                 ;; TODO: support indirect sibling
                  (t (error "Unimplemented combinator %s" combinator)))))
     (funcall walker (esxml--find-node-for attributes) root)))
 
