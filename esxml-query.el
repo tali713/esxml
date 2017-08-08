@@ -221,10 +221,10 @@
      (cond
       ((eq (car token) 'ident)
        (next)
-       (cons 'tag (cdr token)))
+       (cons 'tag (intern (cdr token))))
       ((eq (car token) 'asterisk)
        (next)
-       '(tag . wildcard))
+       '(wildcard))
       (t nil)))))
 
 (defun esxml-parse-css-modifier ()
