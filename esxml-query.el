@@ -11,6 +11,7 @@
 ;; well, the level 3 one has a buggy lexer section whereas level 4
 ;; omits crucial parser definitions, so both have to be used...
 
+;; TODO: support :not
 (defvar esxml-css-selector-token-matchers
   (let* ((h "[0-9a-f]")
          (nl "\n\\|\r\n\\|\r\\|\f")
@@ -81,6 +82,7 @@
 
 (defvar esxml-token-stream)
 
+;; TODO: support :not
 ;; css-selector:
 ;;   css-selector-list;
 ;; css-selector-list:
@@ -419,18 +421,84 @@
      root)
     (nreverse acc)))
 
+(defun esxml-find-descendant (pred root)
+  (cl-some (lambda (node) (esxml-find-node pred node))
+           (esxml-node-children root)))
+
+(defun esxml-find-descendants (pred root)
+  (cl-mapcan (lambda (node) (esxml-find-nodes pred node))
+             (esxml-node-children root)))
+
+(defun esxml-find-child (pred root)
+  (cl-some (lambda (node) (when (funcall pred node) node))
+           (esxml-node-children root)))
+
+(defun esxml-find-children (pred root)
+  (mapcar (lambda (node) (when (funcall pred node) node))
+          (esxml-node-children root)))
+
 
 ;;; querying
 
-(defun esxml--query (selector root)
-  selector)
+(defun esxml--find-node-for (attributes)
+  (lambda (node)
+    (cl-every
+     (lambda (attribute)
+       (let ((type (car attribute))
+             (value (cdr attribute)))
+         (cond
+          ((eq type 'wildcard)
+           t)
+          ((eq type 'tag)
+           (equal (esxml-node-tag node) value))
+          (t (error "Unimplemented attribute type: %s" type)))))
+     attributes)))
+
+(defun esxml--find-nodes (root combinator attributes &optional allp)
+  (let* ((type (cdr (assoc 'combinator combinator)))
+         (walker (cond
+                 ((not type)
+                  'esxml-find-nodes)
+                 ((eq type 'descendant)
+                  (if allp 'esxml-find-descendants 'esxml-find-descendant))
+                 ((eq type 'child)
+                  (if allp 'esxml-find-children 'esxml-find-child))
+                 (t (error "Unimplemented combinator %s" combinator)))))
+    (funcall walker (esxml--find-node-for attributes) root)))
+
+(defun esxml--query (selector root &optional allp)
+  (let* ((mapper (if allp 'cl-mapcan 'mapcar))
+         (attributes (pop selector))
+         combinator
+         (result (esxml--find-nodes root nil attributes)))
+    (while (and result selector)
+      (setq combinator (pop selector))
+      (setq attributes (pop selector))
+      (setq result (funcall
+                    mapper
+                    (lambda (node)
+                      (esxml--find-nodes node combinator attributes allp))
+                    result))
+      (setq result (delq nil result)))
+    (when (not allp)
+      (setq result (car result)))
+    result))
 
 (defun esxml-query (selector root)
   (when (stringp selector)
     (setq selector (esxml-parse-css-selector selector)))
-  (when (> (length selector) 1)
-    (error "Comma syntax is unsupported"))
-  (esxml--query (car selector) root))
+  (let (result)
+    (while (and (not result) selector)
+      (setq result (esxml--query (pop selector) root)))
+    result))
+
+(defun esxml-query-all (selector root)
+  (when (stringp selector)
+    (setq selector (esxml-parse-css-selector selector)))
+  (let (result)
+    (while selector
+      (setq result (append result (esxml--query (pop selector) root t))))
+    result))
 
 (provide 'esxml-query)
 ;;; esxml-query.el ends here
