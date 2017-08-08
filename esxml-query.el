@@ -160,9 +160,12 @@
          (let ((combinator (esxml-parse-css-combinator)))
            (if combinator
                (let ((compound (esxml-parse-compound-css-selector)))
-                 (if compound
-                     (setq result (append (list compound combinator) result))
-                   (error "Trailing combinator")))
+                 (cond
+                  (compound
+                   (setq result (append (list compound combinator) result)))
+                  ;; allow whitespace before comma
+                  ((not (eq (car (peek)) 'comma))
+                   (error "Trailing combinator"))))
              (setq done t))))
        (nreverse result)))))
 
