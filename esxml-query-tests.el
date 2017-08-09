@@ -302,14 +302,8 @@
     (should-not (esxml-query-all "table table" root))
     (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "table thead td" root)))
                    '("Key" "Value")))
-    ;; FIXME: this returns duplicates
-    ;; NOTE: you could solve this by decorating the tree with IDs,
-    ;; fetching results, using cl-delete-duplicate with :key, then
-    ;; undecorating the results
-    ;; NOTE: alternatively, keep a list of IDs while traversing the
-    ;; decorated tree and don't traverse from already seen nodes again
-    ;; (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "table * td" root)))
-    ;;                '("Key" "Value" "Foo" "1" "Bar" "2")))
+    (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "table * td" root)))
+                   '("Key" "Value" "Foo" "1" "Bar" "2")))
     (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "table td" root)))
                    '("Key" "Value" "Foo" "1" "Bar" "2")))
     (should-not (esxml-query-all "td foo" root))

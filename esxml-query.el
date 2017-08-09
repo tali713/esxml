@@ -537,13 +537,27 @@
       (setq result (esxml--query (pop selector) root)))
     result))
 
+(defun esxml--delete-dups (items test)
+  (let ((seen (make-hash-table :test test))
+        result)
+    (while items
+      (let ((item (pop items)))
+        (when (not (gethash item seen))
+          (push item result))
+        (puthash item t seen)))
+    (nreverse result)))
+
 (defun esxml-query-all (selector root)
   (when (stringp selector)
     (setq selector (esxml-parse-css-selector selector)))
   (let (result)
     (while selector
       (setq result (append result (esxml--query (pop selector) root t))))
-    result))
+    ;; NOTE: queries like "foo * bar" can return duplicates which
+    ;; cannot be filtered correctly with `delete-dups' as it tests for
+    ;; structural, not object identity
+    ;; HACK: this will work as long as the nodes aren't modified
+    (esxml--delete-dups result 'eq)))
 
 (provide 'esxml-query)
 ;;; esxml-query.el ends here
