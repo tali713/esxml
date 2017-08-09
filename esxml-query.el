@@ -445,25 +445,56 @@
 ;; traversal, something that could be emulated without zippers if you
 ;; had the parent of the node (and the position of the child)...
 
+(defun esxml--node-matches-attribute-p (node modifier)
+  (let ((attributes (esxml-node-attributes node))
+        haystack)
+    (cl-every
+     (lambda (item)
+       (let ((type (car item))
+             (value (cdr item)))
+         (cond
+          ((eq type 'name)
+           (let ((match (assq (intern value) attributes)))
+             (setq haystack (cdr match))
+             match))
+          ((eq type 'exact-match)
+           (equal haystack value))
+          ((eq type 'prefix-match)
+           (string-prefix-p value haystack))
+          ((eq type 'suffix-match)
+           (string-suffix-p value haystack))
+          ((eq type 'substring-match)
+           (string-match-p (regexp-quote value) haystack))
+          ((eq type 'include-match)
+           (member value (split-string haystack " ")))
+          ((eq type 'dash-match)
+           (equal value (car (split-string haystack "-"))))
+          (t (error "Unknown attribute modifier")))))
+     modifier)))
+
+(defun esxml--node-matches-modifier-p (node type value)
+  (cond
+   ((eq type 'wildcard)
+    t)
+   ((eq type 'tag)
+    (equal (esxml-node-tag node) value))
+   ((eq type 'id)
+    (equal (cdr (assq 'id (esxml-node-attributes node))) value))
+   ((eq type 'class)
+    (let ((class (cdr (assq 'class (esxml-node-attributes node)))))
+      (and class (member value (split-string class " ")))))
+   ((eq type 'attribute)
+    (esxml--node-matches-attribute-p node value))
+   ;; TODO: support structural pseudo functions
+   (t (error "Unimplemented attribute type: %s" type))))
+
 (defun esxml--find-node-for (attributes)
   (lambda (node)
     (cl-every
      (lambda (attribute)
        (let ((type (car attribute))
              (value (cdr attribute)))
-         (cond
-          ((eq type 'wildcard)
-           t)
-          ((eq type 'tag)
-           (equal (esxml-node-tag node) value))
-          ((eq type 'id)
-           (equal (cdr (assq 'id (esxml-node-attributes node))) value))
-          ((eq type 'class)
-           (let ((class (cdr (assq 'class (esxml-node-attributes node)))))
-             (and class (member value (split-string class " +" t)))))
-          ;; TODO: support attributes
-          ;; TODO: support structural pseudo functions
-          (t (error "Unimplemented attribute type: %s" type)))))
+         (esxml--node-matches-modifier-p node type value)))
      attributes)))
 
 (defun esxml--find-nodes (root combinator attributes &optional allp)

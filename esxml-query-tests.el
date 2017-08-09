@@ -181,7 +181,7 @@
 (defvar esxml-query-document
   (xml-to-esxml
    "<!DOCTYPE html>
-<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\">
+<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en-US\">
   <head>
     <meta charset=\"utf-8\" />
     <link rel=\"self\" />
@@ -208,6 +208,8 @@
     </table>
   </body>
 </html>"))
+
+;; TODO: test the below in a browser
 
 (ert-deftest esxml-query-test ()
   (let ((root esxml-query-document))
@@ -250,7 +252,35 @@
     (should (equal (esxml-node-children (esxml-query ".row.odd .value" root))
                    '("2")))
     (should (eq (esxml-node-tag (esxml-query ".even, .odd" root)) 'tr))
-    ))
+
+    (should (eq (esxml-node-tag (esxml-query "[rel=self]" root)) 'link))
+    (should-not (esxml-query "[rel=elf]" root))
+    (should-not (esxml-query "[rel=sel]" root))
+    (should-not (esxml-query "[rel=selfie]" root))
+    (should (equal (esxml-node-children (esxml-query "[class='row even'] td" root))
+                   '("Foo")))
+    (should (esxml-query "[class^=row]" root))
+    (should (esxml-query "[class$=row]" root))
+    (should-not (esxml-query "[class^=key]" root))
+    (should (esxml-query "[class$=key]" root))
+    (should-not (esxml-query "[class^=foo]" root))
+    (should-not (esxml-query "[class$=bar]" root))
+    (should (esxml-query "[charset^=utf][charset$='8']" root))
+    (should (esxml-query "[charset*=utf]" root))
+    (should (esxml-query "[class*=val]" root))
+    (should-not (esxml-query "[class*=foo]" root))
+    (should (esxml-query "[rel*=self]" root))
+    (should (esxml-query "[class*='l k']" root))
+    (should-not (esxml-query "[charset~=utf]" root))
+    (should (esxml-query "[rel~=self]" root))
+    (should (esxml-query "[class~=row]" root))
+    (should (esxml-query "[class~=key]" root))
+    (should-not (esxml-query "[class~=foo]" root))
+    (should (equal (esxml-node-children (esxml-query "[class~=row][class~=odd] [class~=value]" root))
+                   '("2")))
+    (should (equal (cdr (assq 'lang (esxml-node-attributes (esxml-query "[lang|=en]" root))))
+                   "en-US"))
+    (should-not (esxml-query "[lang|=US]" root))))
 
 (ert-deftest esxml-query-all-test ()
   (let ((root esxml-query-document))
@@ -308,4 +338,33 @@
     (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all ".row.odd .value" root)))
                    '("2")))
     (should (= (length (esxml-query-all ".even, .odd" root)) 2))
-    ))
+
+    (should (eq (esxml-node-tag (car (esxml-query-all "[rel=self]" root)))
+                'link))
+    (should-not (esxml-query-all "[rel=elf]" root))
+    (should-not (esxml-query-all "[rel=sel]" root))
+    (should-not (esxml-query-all "[rel=selfie]" root))
+    (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "[class='row even'] td" root)))
+                   '("Foo" "1")))
+    (should (= (length (esxml-query-all "[class^=row]" root)) 3))
+    (should (= (length (esxml-query-all "[class$=row]" root)) 1))
+    (should-not (esxml-query-all "[class^=key]" root))
+    (should (= (length (esxml-query-all "[class$=key]" root)) 2))
+    (should-not (esxml-query-all "[class^=foo]" root))
+    (should-not (esxml-query-all "[class$=bar]" root))
+    (should (= (length (esxml-query-all "[charset^=utf][charset$='8']" root)) 1))
+    (should (= (length (esxml-query-all "[charset*=utf]" root)) 1))
+    (should (= (length (esxml-query-all "[class*=val]" root)) 2))
+    (should-not (esxml-query-all "[class*=foo]" root))
+    (should (= (length (esxml-query-all "[rel*=self]" root)) 1))
+    (should (= (length (esxml-query-all "[class*='l k']" root)) 2))
+    (should-not (esxml-query-all "[charset~=utf]" root))
+    (should (= (length (esxml-query-all "[rel~=self]" root)) 1))
+    (should (= (length (esxml-query-all "[class~=row]" root)) 3))
+    (should (= (length (esxml-query-all "[class~=key]" root)) 2))
+    (should-not (esxml-query-all "[class~=foo]" root))
+    (should (equal (car (esxml-node-children (car (esxml-query-all "[class~=row][class~=odd] [class~=value]" root))))
+                   "2"))
+    (should (equal (cdr (assq 'lang (esxml-node-attributes (car (esxml-query-all "[lang|=en]" root)))))
+                   "en-US"))
+    (should-not (esxml-query-all "[lang|=US]" root))))
