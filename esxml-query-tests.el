@@ -181,7 +181,7 @@
 (defvar esxml-query-document
   (xml-to-esxml
    "<!DOCTYPE html>
-<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en-US\">
+<html lang=\"en-US\">
   <head>
     <meta charset=\"utf-8\" />
     <link rel=\"self\" />
@@ -190,10 +190,10 @@
   <body>
     <table>
       <thead>
-        <th class=\"row\" id=\"heading\">
-          <td class=\"col\">Key</td>
-          <td class=\"col\">Value</td>
-        </th>
+        <tr class=\"row\" id=\"heading\">
+          <th class=\"col\">Key</th>
+          <th class=\"col\">Value</th>
+        </tr>
       </thead>
       <tbody>
         <tr class=\"row even\">
@@ -209,8 +209,6 @@
   </body>
 </html>"))
 
-;; TODO: test the below in a browser
-
 (ert-deftest esxml-query-test ()
   (let ((root esxml-query-document))
     (should (eq (esxml-node-tag (esxml-query "*" root)) 'html))
@@ -219,15 +217,16 @@
     (should (eq (esxml-node-tag (esxml-query "table, foo" root)) 'table))
     (should (eq (esxml-node-tag (esxml-query "foo, table" root)) 'table))
     (should-not (esxml-query "foo, bar" root))
-    (should (eq (esxml-node-tag (esxml-query "tbody, thead" root)) 'tbody))
+    (should (eq (esxml-node-tag (esxml-query "thead, tbody" root)) 'thead))
+    (should (eq (esxml-node-tag (esxml-query "tbody, thead" root)) 'thead))
 
     (should-not (esxml-query "table table" root))
-    (should (equal (esxml-node-children (esxml-query "table thead td" root))
+    (should (equal (esxml-node-children (esxml-query "table thead th" root))
                    '("Key")))
     (should (equal (esxml-node-children (esxml-query "table td" root))
-                   '("Key")))
+                   '("Foo")))
     (should (equal (esxml-node-children (esxml-query "table * td" root))
-                   '("Key")))
+                   '("Foo")))
     (should-not (esxml-query "td foo" root))
     (should-not (esxml-query "tr foo td" root))
     (should (equal (esxml-node-children (esxml-query "tbody>tr>td" root))
@@ -235,15 +234,15 @@
     (should-not (esxml-query "tr>foo" root))
     (should-not (esxml-query "foo>td" root))
 
-    (should (equal (esxml-node-children (esxml-query "#heading>td" root))
+    (should (equal (esxml-node-children (esxml-query "#heading>th" root))
                    '("Key")))
-    (should (equal (esxml-node-tag (esxml-query "th#heading" root)) 'th))
-    (should (equal (esxml-node-tag (esxml-query "#heading" root)) 'th))
-    (should-not (esxml-query "tr#heading" root))
-    (should-not (esxml-query "th #heading" root))
+    (should (equal (esxml-node-tag (esxml-query "tr#heading" root)) 'tr))
+    (should (equal (esxml-node-tag (esxml-query "#heading" root)) 'tr))
+    (should-not (esxml-query "th#heading" root))
+    (should-not (esxml-query "tr #heading" root))
 
     (should (equal (esxml-node-children (esxml-query ".row>td" root))
-                   '("Key")))
+                   '("Foo")))
     (should-not (esxml-query ".foo" root))
     (should (esxml-query ".row.even" root))
     (should-not (esxml-query ".row.foo" root))
@@ -251,7 +250,8 @@
                    '("1")))
     (should (equal (esxml-node-children (esxml-query ".row.odd .value" root))
                    '("2")))
-    (should (eq (esxml-node-tag (esxml-query ".even, .odd" root)) 'tr))
+    (should (equal (esxml-node-children (esxml-query ".even .value, .odd .value" root))
+                   '("1")))
 
     (should (eq (esxml-node-tag (esxml-query "[rel=self]" root)) 'link))
     (should-not (esxml-query "[rel=elf]" root))
@@ -287,7 +287,7 @@
     (should (equal (cl-remove-if 'not (mapcar 'esxml-node-tag
                                               (esxml-query-all "*" root)))
                    '(html head meta link title
-                          body table thead th td td tbody tr td td tr td td)))
+                          body table thead tr th th tbody tr td td tr td td)))
     (should (equal (mapcar 'esxml-node-tag (esxml-query-all "table" root))
                    '(table)))
     (should-not (esxml-query-all "foo" root))
@@ -296,16 +296,18 @@
     (should (equal (mapcar 'esxml-node-tag (esxml-query-all "foo, table" root))
                    '(table)))
     (should-not (esxml-query-all "foo, bar" root))
+    (should (equal (mapcar 'esxml-node-tag (esxml-query-all "thead, tbody" root))
+                   '(thead tbody)))
     (should (equal (mapcar 'esxml-node-tag (esxml-query-all "tbody, thead" root))
-                   '(tbody thead)))
+                   '(thead tbody)))
 
     (should-not (esxml-query-all "table table" root))
-    (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "table thead td" root)))
+    (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "table thead th" root)))
                    '("Key" "Value")))
-    (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "table * td" root)))
-                   '("Key" "Value" "Foo" "1" "Bar" "2")))
     (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "table td" root)))
-                   '("Key" "Value" "Foo" "1" "Bar" "2")))
+                   '("Foo" "1" "Bar" "2")))
+    (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "table * td" root)))
+                   '("Foo" "1" "Bar" "2")))
     (should-not (esxml-query-all "td foo" root))
     (should-not (esxml-query-all "tr foo td" root))
     (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "tbody>tr>td" root)))
@@ -313,17 +315,17 @@
     (should-not (esxml-query-all "tr>foo" root))
     (should-not (esxml-query-all "foo>td" root))
 
-    (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "#heading>td" root)))
+    (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all "#heading>th" root)))
                    '("Key" "Value")))
-    (should (equal (mapcar 'esxml-node-tag (esxml-query-all "th#heading" root))
-                   '(th)))
+    (should (equal (mapcar 'esxml-node-tag (esxml-query-all "tr#heading" root))
+                   '(tr)))
     (should (equal (mapcar 'esxml-node-tag (esxml-query-all "#heading" root))
-                   '(th)))
-    (should-not (esxml-query-all "tr#heading" root))
-    (should-not (esxml-query-all "th #heading" root))
+                   '(tr)))
+    (should-not (esxml-query-all "th#heading" root))
+    (should-not (esxml-query-all "tr #heading" root))
 
     (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all ".row>td" root)))
-                   '("Key" "Value" "Foo" "1" "Bar" "2")))
+                   '("Foo" "1" "Bar" "2")))
     (should-not (esxml-query-all ".foo" root))
     (should (= (length (esxml-query-all ".row.even" root)) 1))
     (should-not (esxml-query-all ".row.foo" root))
@@ -332,6 +334,8 @@
     (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all ".row.odd .value" root)))
                    '("2")))
     (should (= (length (esxml-query-all ".even, .odd" root)) 2))
+    (should (equal (mapcar 'car (mapcar 'esxml-node-children (esxml-query-all ".even .value, .odd .value" root)))
+                   '("1" "2")))
 
     (should (eq (esxml-node-tag (car (esxml-query-all "[rel=self]" root)))
                 'link))

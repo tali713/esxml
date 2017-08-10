@@ -521,8 +521,52 @@ Returns a list of the nodes or nil if none found."
   (mapcar (lambda (node) (when (funcall pred node) node))
           (esxml-node-children root)))
 
+(defun esxml--node-with-children (node children)
+  (let ((tag (esxml-node-tag node))
+        (attributes (esxml-node-attributes node)))
+    (append (list tag attributes) children)))
+
+(defun esxml--node-with-attributes (node attributes)
+  (let ((tag (esxml-node-tag node))
+        (children (esxml-node-children node)))
+    (append (list tag attributes) children)))
+
+(defun esxml-tree-map (function root)
+  "Returns a copy of ROOT with FUNCTION applied to each node."
+  (if (esxml-branch-p root)
+      (esxml--node-with-children
+       (funcall function root)
+       (mapcar (lambda (node) (esxml-tree-map function node))
+               (esxml-node-children root)))
+    (funcall function root)))
+
+(defun esxml--decorate-tree (root)
+  (let ((i 0))
+    (esxml-tree-map
+     (lambda (node)
+       (let ((attribute (cons esxml--symbol i))
+             (attributes (esxml-node-attributes node)))
+         (setq attributes (append (list attribute) attributes))
+         (setq i (1+ i))
+         (if (esxml-branch-p node)
+             (esxml--node-with-attributes node attributes)
+           node)))
+     root)))
+
+(defun esxml--undecorate-node (node)
+  (if (esxml-branch-p node)
+      (let ((attributes (esxml-node-attributes node)))
+        (esxml--node-with-attributes node (assq-delete-all esxml--symbol
+                                                           attributes)))
+    node))
+
+(defun esxml--retrieve-decoration (node)
+  (cdr (assq esxml--symbol (esxml-node-attributes node))))
+
 
 ;;; querying
+
+(defvar esxml--symbol (make-symbol "id"))
 
 ;; NOTE: supporting structural pseudo functions, direct siblings and
 ;; indirect siblings requires breadth instead of depth traversal,
@@ -582,48 +626,32 @@ Returns a list of the nodes or nil if none found."
          (esxml--node-matches-modifier-p node type value)))
      attributes)))
 
-(defun esxml--find-nodes (root combinator attributes &optional allp)
+(defun esxml--find-nodes (root combinator attributes)
   (let* ((type (cdr (assq 'combinator combinator)))
          (walker (cond
                  ((not type)
                   'esxml-find-nodes)
                  ((eq type 'descendant)
-                  (if allp 'esxml-find-descendants 'esxml-find-descendant))
+                  'esxml-find-descendants)
                  ((eq type 'child)
-                  (if allp 'esxml-find-children 'esxml-find-child))
+                  'esxml-find-children)
                  ;; TODO: support direct sibling
                  ;; TODO: support indirect sibling
                  (t (error "Unimplemented combinator %s" combinator)))))
     (funcall walker (esxml--find-node-for attributes) root)))
 
-(defun esxml--query (selector root &optional allp)
-  (let* ((mapper (if allp 'cl-mapcan 'mapcar))
-         (attributes (pop selector))
+(defun esxml--query (selector root)
+  (let* ((attributes (pop selector))
          combinator
          (result (esxml--find-nodes root nil attributes)))
     (while (and result selector)
       (setq combinator (pop selector))
       (setq attributes (pop selector))
-      (setq result (funcall
-                    mapper
+      (setq result (cl-mapcan
                     (lambda (node)
-                      (esxml--find-nodes node combinator attributes allp))
+                      (esxml--find-nodes node combinator attributes))
                     result))
       (setq result (delq nil result)))
-    (when (not allp)
-      (setq result (car result)))
-    result))
-
-(defun esxml-query (selector root)
-  "Locates a node satisfying SELECTOR starting from ROOT.
-SELECTOR must be a string containing a CSS selector or a parsed
-CSS selector returned by `esxml-parse-css-selector'.  Returns the
-node or nil if none found."
-  (when (stringp selector)
-    (setq selector (esxml-parse-css-selector selector)))
-  (let (result)
-    (while (and (not result) selector)
-      (setq result (esxml--query (pop selector) root)))
     result))
 
 (defun esxml--delete-dups (items test)
@@ -632,8 +660,8 @@ node or nil if none found."
     (while items
       (let ((item (pop items)))
         (when (not (gethash item seen))
-          (push item result))
-        (puthash item t seen)))
+          (push item result)
+          (puthash item t seen))))
     (nreverse result)))
 
 (defun esxml-query-all (selector root)
@@ -643,14 +671,28 @@ CSS selector returned by `esxml-parse-css-selector'.  Returns a
 list of the nodes or nil if none found."
   (when (stringp selector)
     (setq selector (esxml-parse-css-selector selector)))
-  (let (result)
-    (while selector
-      (setq result (append result (esxml--query (pop selector) root t))))
-    ;; NOTE: queries like "foo * bar" can return duplicates which
-    ;; cannot be filtered correctly with `delete-dups' as it tests for
-    ;; structural, not object identity
-    ;; HACK: this will work as long as the nodes aren't modified
-    (esxml--delete-dups result 'eq)))
+  (if (= (length selector) 1)
+      ;; no commas, we can only get the same nodes repeatedly
+      (esxml--delete-dups (esxml--query (car selector) root) 'eq)
+    ;; commas, nodes might be the same *and* in the wrong order
+    (setq root (esxml--decorate-tree root))
+    (let (result)
+      (while selector
+        (setq result (append result (esxml--query (pop selector) root))))
+      (setq result (cl-sort result '< :key 'esxml--retrieve-decoration))
+      (setq result (cl-delete-duplicates result :test '=
+                                         :key 'esxml--retrieve-decoration))
+      (mapcar (lambda (node) (esxml--undecorate-node node)) result))))
+
+(defun esxml-query (selector root)
+  "Locates a node satisfying SELECTOR starting from ROOT.
+SELECTOR must be a string containing a CSS selector or a parsed
+CSS selector returned by `esxml-parse-css-selector'.  Returns the
+node or nil if none found."
+  ;; NOTE: you can do a bit less work (the savings decrease the more
+  ;; branches the query discards), but it's simpler and safer to just
+  ;; have the same algorithm for both entry points
+  (car (esxml-query-all selector root)))
 
 (provide 'esxml-query)
 ;;; esxml-query.el ends here
