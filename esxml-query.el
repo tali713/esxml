@@ -467,6 +467,11 @@ argument."
   (and (esxml-branch-p node)
        (cadr node)))
 
+(defun esxml-node-attribute (attribute node)
+  "Returns the attribute ATTRIBUTE of NODE if available."
+  (and (esxml-branch-p node)
+       (cdr (assq attribute (cadr node)))))
+
 (defun esxml-node-children (node)
   "Returns the children of NODE if available."
   (and (esxml-branch-p node)
@@ -561,7 +566,7 @@ Returns a list of the nodes or nil if none found."
     node))
 
 (defun esxml--retrieve-decoration (node)
-  (cdr (assq esxml--symbol (esxml-node-attributes node))))
+  (esxml-node-attribute esxml--symbol node))
 
 
 ;;; querying
@@ -608,9 +613,9 @@ Returns a list of the nodes or nil if none found."
    ((eq type 'tag)
     (equal (esxml-node-tag node) value))
    ((eq type 'id)
-    (equal (cdr (assq 'id (esxml-node-attributes node))) value))
+    (equal (esxml-node-attribute 'id node) value))
    ((eq type 'class)
-    (let ((class (cdr (assq 'class (esxml-node-attributes node)))))
+    (let ((class (esxml-node-attribute 'class node)))
       (and class (member value (split-string class " ")))))
    ((eq type 'attribute)
     (esxml--node-matches-attribute-p node value))
