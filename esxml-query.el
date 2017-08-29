@@ -596,7 +596,8 @@ Returns a list of the nodes or nil if none found."
           ((eq type 'include-match)
            (member value (split-string haystack " ")))
           ((eq type 'dash-match)
-           (equal value (car (split-string haystack "-"))))
+           (or (equal value haystack)
+               (string-match-p (format "^%s-" (regexp-quote value)) haystack)))
           (t (error "Unknown attribute modifier")))))
      modifier)))
 
