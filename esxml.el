@@ -36,7 +36,7 @@
 ;; or use a library like `elnode' to serve dynamic pages.  Or even to
 ;; extract a form from a site to produce an API.
 ;;
-;; TODO: Better documentation, more conveniance.
+;; TODO: Better documentation, more convenience.
 ;;
 ;; NOTICE: Code base will be transitioning to using pcase instead of
 ;; destructuring bind wherever possible.  If this leads to hard to

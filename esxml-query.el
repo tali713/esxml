@@ -31,7 +31,7 @@
 ;;
 ;; Browsers faced a similar problem until jQuery happened, shortly
 ;; afterwards they started providing the `node.querySelector' and
-;; `node.querySelectorAll' API for retreaving one or all nodes
+;; `node.querySelectorAll' API for retrieving one or all nodes
 ;; matching a given CSS selector.  This code implements the same API
 ;; with the `esxml-query' and `esxml-query-all' functions.  The
 ;; following table summarizes the currently supported modifiers and
