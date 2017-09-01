@@ -545,6 +545,8 @@ Returns a list of the nodes or nil if none found."
                (esxml-node-children root)))
     (funcall function root)))
 
+(defvar esxml--symbol (make-symbol "id"))
+
 (defun esxml--decorate-tree (root)
   (let ((i 0))
     (esxml-tree-map
@@ -570,8 +572,6 @@ Returns a list of the nodes or nil if none found."
 
 
 ;;; querying
-
-(defvar esxml--symbol (make-symbol "id"))
 
 ;; NOTE: supporting structural pseudo functions, direct siblings and
 ;; indirect siblings requires breadth instead of depth traversal,
