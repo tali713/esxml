@@ -2,6 +2,8 @@
 (require 'kv)
 (require 'db)
 (require 'uuid)
+(require 'esxml-form)
+(require 'esxml-html)
 
 (defvar my-test-db nil
   "Test database variable.")
