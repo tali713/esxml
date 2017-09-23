@@ -34,6 +34,9 @@
 (require 'kv)
 (require 'esxml)
 
+(defun aget (alist key)
+  (cdr (assoc key alist)))
+
 (defconst esxml-form-field-defn
   '(name
     &key
