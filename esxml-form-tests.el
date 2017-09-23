@@ -153,7 +153,7 @@
      (unless errors (esxml-form-save fs params))
      (let ((value (db-get "test001" my-test-db)))
        (should
-        (equalx
+        (equal
          value
          '(("username" . "test001")
            ("key" . "wadkwqdnwdNJNSJNJSw"))))))))
