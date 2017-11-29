@@ -83,7 +83,7 @@
          (unicode (format "\\%s\\{1,6\\}[ \t\r\n\f]?" h))
          (escape (format "\\(?:%s\\)\\|\\[ -~\200-\U0010ffff]" unicode))
          (nmstart (format "[a-z]\\|%s\\|\\(?:%s\\)" nonascii escape))
-         (nmchar (format "[a-z0-9-]\\|%s\\|\\(?:%s\\)" nonascii escape))
+         (nmchar (format "[a-z0-9-_]\\|%s\\|\\(?:%s\\)" nonascii escape))
          (num "[0-9]+\\|[0-9]*\\.[0-9]+")
          (string1 (format "\"\\(?:[\t !#$%%&(-~]\\|\\(?:%s\\)\\|\'\\|%s\\|\\(?:%s\\)\\)*\"" nl nonascii escape))
          (string2 (format "'\\(?:[\t !#$%%&(-~]\\|\\(?:%s\\)\\|\"\\|%s\\|\\(?:%s\\)\\)*'" nl nonascii escape))
