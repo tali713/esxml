@@ -9,6 +9,8 @@
                  '((((wildcard))))))
   (should (equal (esxml-parse-css-selector "foo")
                  '((((tag . foo))))))
+  (should (equal (esxml-parse-css-selector "foo__bar--baz")
+                 '((((tag . foo__bar--baz))))))
   (should-error (esxml-parse-css-selector "foo 123"))
   (should (equal (esxml-parse-css-selector "foo bar")
                  '((((tag . foo))
