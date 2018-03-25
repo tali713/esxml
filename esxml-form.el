@@ -62,7 +62,7 @@ data, for example, a database."
   (let ((fields (make-symbol "fieldsv")))
     `(let ((,fields
             (map-bind ;; FIXME optional fields?
-             ,esxml-form-field-defn
+             #'esxml-form-field-defn
              (list name
                    :type type
                    :regex regex
@@ -88,7 +88,7 @@ data, for example, a database."
 (defmacro esxml-form-bind (body form)
   "Bind BODY successively to FORMS fields."
   `(map-bind
-    ,esxml-form-field-defn
+    #'esxml-form-field-defn
     ,body
     (esxml-form-fields ,form)))
 
