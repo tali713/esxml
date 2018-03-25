@@ -2,6 +2,8 @@
 
 ;;; main interface
 
+(require 'cl-lib)
+
 (defvar *css-stream* nil)
 
 (defvar *indent-css* nil
@@ -20,7 +22,7 @@ There are three possible values:
 
 (defmacro css (&rest rules)
   `(mapconcat (lambda (x) (format "%s" x))
-              ',(mapcan #'process-css-rule rules)
+              (cl-mapcan #'process-css-rule ',rules)
               ""))
 
 (defun inline-css (&rest properties)
@@ -138,7 +140,7 @@ There are three possible values:
     (append (list +newline+ (css-selectors-to-string selectors) " {")
             (process-css-properties properties nil)
             (list +newline+ "}" +newline+)
-            (mapcan (lambda (child-rules) 
+            (cl-mapcan (lambda (child-rules)
                       (process-css-rule child-rules :parent-selectors selectors))
                     children-rules))))
 
