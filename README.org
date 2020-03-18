@@ -67,5 +67,34 @@ also includes tools for working with parsed xml
 *** A standard page generator
 
 
-* Extracting Data from XML
-  TODO
+* Extracting data from HTML and XML documents with esxml-query.el
+  #+BEGIN_SRC emacs-lisp
+    (url-retrieve
+     "https://schneierfacts.com/"
+     (lambda (status &rest args)
+       (let* ((html (libxml-parse-html-region url-http-end-of-headers (point-max)))
+              (fact (esxml-query "p.fact" html)))
+         (message "Did you know: %s" (car (esxml-node-children fact))))))
+  #+END_SRC
+
+  #+BEGIN_SRC emacs-lisp
+    (url-retrieve
+     "https://www.xkcd.com/rss.xml"
+     (lambda (status &rest args)
+       (goto-char url-http-end-of-headers)
+       (forward-line 1)
+       (let* ((xml (libxml-parse-xml-region (point) (point-max)))
+              (latest (esxml-query "rss>channel>item" xml))
+              (title (car (esxml-node-children (esxml-query "title" latest))))
+              (link (car (esxml-node-children (esxml-query "link" latest)))))
+         (message "%S: %s" title link))))
+  #+END_SRC
+
+  See the following packages for more examples:
+
+  - https://gitlab.com/fvdbeek/emacs-pubmed
+  - https://github.com/balddotcat/posthtml
+  - https://gist.github.com/dustinlacewell/86f2fedc8ebcea22f96a3c5a81a0e0ba
+  - https://github.com/alphapapa/org-web-tools
+  - https://github.com/alphapapa/org-books
+  - https://github.com/mihaiolteanu/versuri
