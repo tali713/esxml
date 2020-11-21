@@ -182,6 +182,49 @@
 ;; css-expression:
 ;;   '+' | '-' | DIMENSION | NUMBER | STRING | IDENT
 
+(defun esxml--parse-css-identifier (string)
+  ;; https://www.w3.org/TR/css-syntax-3/#consume-string-token
+  (let* ((code-points (string-to-list string))
+         chars
+         token)
+    (while code-points
+      (let ((char (pop code-points)))
+        (if (= char ?\\)
+            (let ((char (pop code-points)))
+              (cond
+               ((not char))
+               ((= char ?\n))
+               ((or (and (>= char ?0) (<= char ?9))
+                    (and (>= char ?a) (<= char ?f))
+                    (and (>= char ?A) (<= char ?F)))
+                (let ((i 0)
+                      (hex-chars (list char)))
+                  (while (and (< i 5) code-points)
+                    (let ((char (car code-points)))
+                      (if (or (and (>= char ?0) (<= char ?9))
+                              (and (>= char ?a) (<= char ?f))
+                              (and (>= char ?A) (<= char ?F)))
+                          (push (pop code-points) hex-chars)
+                        (setq i 5)))
+                    (setq i (1+ i)))
+                  (let ((char (car code-points)))
+                    (when (and char (= char ?\s))
+                      (pop code-points)))
+                  (let* ((hex-token (concat (nreverse hex-chars)))
+                         (code-point (string-to-number hex-token 16)))
+                    (if (or (zerop code-point)
+                            (and (>= code-point ?\ud800) (<= code-point ?\udfff))
+                            (> code-point ?\U0010ffff))
+                        (push ?\ufffd chars)
+                      (push code-point chars)))))
+               (t ; unspecified: non-hex digit
+                (push char chars))))
+          (push char chars))))
+    (concat (nreverse chars))))
+
+(defun esxml--parse-css-string-literal (string)
+  (esxml--parse-css-identifier (substring string 1 -1)))
+
 (defmacro esxml--with-parse-shorthands (&rest body)
   `(cl-macrolet ((peek () '(car esxml--token-stream))
                  (next () '(pop esxml--token-stream))
@@ -294,7 +337,7 @@ argument."
      (cond
       ((eq (car token) 'ident)
        (next)
-       (cons 'tag (intern (cdr token))))
+       (cons 'tag (intern (esxml--parse-css-identifier (cdr token)))))
       ((eq (car token) 'asterisk)
        (next)
        '(wildcard))
@@ -328,7 +371,7 @@ argument."
        (let ((name (esxml--parse-css-attrib-name)))
          (when (not name)
            (error "Expected attribute name"))
-         (push (cons 'name name) result)
+         (push (cons 'name (esxml--parse-css-identifier name)) result)
          (when (not (accept 'rbracket))
            (let ((match (esxml--parse-css-attrib-match)))
              (when (not match)
@@ -374,10 +417,10 @@ argument."
      (cond
       ((eq (car token) 'ident)
        (next)
-       (cdr token))
+       (esxml--parse-css-identifier (cdr token)))
       ((eq (car token) 'string)
        (next)
-       (substring (cdr token) 1 -1))
+       (esxml--parse-css-string-literal (cdr token)))
       (t nil)))))
 
 (defun esxml--parse-css-pseudo ()
@@ -392,12 +435,12 @@ argument."
              (if (eq type 'pseudo-class)
                  (let ((value (car functional))
                        (args (cdr functional)))
-                   (push (cons 'name value) result)
+                   (push (cons 'name (esxml--parse-css-identifier value)) result)
                    (push (cons 'args args) result))
                (error "Pseudo-elements may not have arguments"))
            (let ((value (accept 'ident)))
              (if value
-                 (push (cons 'name value) result)
+                 (push (cons 'name (esxml--parse-css-identifier value)) result)
                (error "Expected function or identifier")))))
        (cons type (nreverse result))))))
 
@@ -435,16 +478,16 @@ argument."
        '(operator . -))
       ((eq (car token) 'dimension)
        (next)
-       (cons 'dimension (cdr token)))
+       (cons 'dimension (esxml--parse-css-identifier (cdr token))))
       ((eq (car token) 'number)
        (next)
        (cons 'number (string-to-number (cdr token))))
       ((eq (car token) 'string)
        (next)
-       (cons 'string (substring (cdr token) 1 -1)))
+       (cons 'string (esxml--parse-css-string-literal (cdr token))))
       ((eq (car token) 'ident)
        (next)
-       (cons 'ident (cdr token)))
+       (cons 'ident (esxml--parse-css-identifier (cdr token))))
       (t nil)))))
 
 
