@@ -685,7 +685,7 @@ list of the nodes or nil if none found."
     (setq root (esxml--decorate-tree root))
     (let (result)
       (while selector
-        (setq result (append result (esxml--query (pop selector) root))))
+        (setq result (nconc result (esxml--query (pop selector) root))))
       (setq result (cl-sort result '< :key 'esxml--retrieve-decoration))
       (setq result (cl-delete-duplicates result :test '=
                                          :key 'esxml--retrieve-decoration))
