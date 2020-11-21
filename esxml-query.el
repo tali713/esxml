@@ -182,6 +182,41 @@
 ;; css-expression:
 ;;   '+' | '-' | DIMENSION | NUMBER | STRING | IDENT
 
+(defun esxml-query-css-escape (string)
+  "Returns escaped version of STRING for use in selectors.
+The logic used here corresponds to the CSS.escape API as
+specified in https://drafts.csswg.org/cssom/#the-css.escape()-method."
+  (let (chars)
+    (dotimes (i (length string))
+      (let* ((char (aref string i))
+             (unprintablep (or (and (>= char ?\u0001) (<= char ?\u001f))
+                               (= char ?\u007f)))
+             (nonasciip (>= char ?\u0080))
+             (digitp (and (>= char ?\u0030) (<= char ?\u0039)))
+             (upperp (and (>= char ?\u0041) (<= char ?\u005a)))
+             (lowerp (and (>= char ?\u0061) (<= char ?\u007a))))
+        (cond
+         ((= char ?\u0000)
+          (push ?\ufffd chars))
+         (unprintablep
+          (dolist (char (string-to-list (format "\\%x " char)))
+            (push char chars)))
+         ((and (= i 0) digitp)
+          (dolist (char (string-to-list (format "\\%x " char)))
+            (push char chars)))
+         ((and (= i 1) digitp (= (aref string 0) ?-))
+          (dolist (char (string-to-list (format "\\%x " char)))
+            (push char chars)))
+         ((and (= i 0) (= char ?-) (= (length string) 1))
+          (push ?\\ chars)
+          (push char chars))
+         ((or nonasciip (= char ?-) (= char ?_) digitp upperp lowerp)
+          (push char chars))
+         (t
+          (push ?\\ chars)
+          (push char chars)))))
+    (concat (nreverse chars))))
+
 (defun esxml--parse-css-identifier (string)
   ;; https://www.w3.org/TR/css-syntax-3/#consume-string-token
   (let* ((code-points (string-to-list string))

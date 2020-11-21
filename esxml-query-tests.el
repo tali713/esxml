@@ -146,7 +146,11 @@
                  '((((attribute
                       (name . "foo")
                       (exact-match . "bar.baz")))))))
-  (should (equal (esxml-parse-css-selector "[foo='bar\\20 baz']")
+  (should (equal (esxml-parse-css-selector "[foo='bar\\ baz']")
+                 '((((attribute
+                      (name . "foo")
+                      (exact-match . "bar baz")))))))
+  (should (equal (esxml-parse-css-selector (format "[foo='bar\\20 baz']"))
                  '((((attribute
                       (name . "foo")
                       (exact-match . "bar baz")))))))
@@ -223,6 +227,14 @@
                        (operator . -)
                        (number . 1))))))))
   (should-error (esxml-parse-css-selector ":foo(bar")))
+
+(ert-deftest esxml-query-css-escape-test ()
+  (should (equal (esxml-query-css-escape "\0") "\ufffd"))
+  (should (equal (esxml-query-css-escape "\r\n") "\\d \\a "))
+  (should (equal (esxml-query-css-escape "-") "\\-"))
+  (should (equal (esxml-query-css-escape "-1") "-\\31 "))
+  (should (equal (esxml-query-css-escape "foo.bar") "foo\\.bar"))
+  (should (equal (esxml-query-css-escape "foo bar") "foo\\ bar")))
 
 (defvar esxml-query-document
   (xml-to-esxml
