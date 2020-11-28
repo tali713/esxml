@@ -250,7 +250,7 @@ recurse below a match."
 ;; taken from kv
 (defmacro esxml-destructuring-mapcar (args sexp seq)
   (declare (indent 2))
-  (let ((entry (make-symbol)))
+  (let ((entry (make-symbol "entry")))
     `(mapcar (lambda (,entry)
                (destructuring-bind ,args ,entry ,sexp))
              ,seq)))
