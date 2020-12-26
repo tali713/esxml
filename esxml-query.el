@@ -86,7 +86,7 @@
          (nmstart (format "[a-z_]\\|%s\\|\\(?:%s\\)" nonascii escape))
          (nmchar (format "[a-z0-9_-]\\|%s\\|\\(?:%s\\)" nonascii escape))
          (num "[0-9]+\\|[0-9]*\\.[0-9]+")
-         (string1 (format "\"\\(?:[\t !#$%%&(-~]\\|\\\\\\(?:%s\\)\\|\'\\|%s\\|\\(?:%s\\)\\)*\"" nl nonascii escape))
+         (string1 (format "\"\\(?:[\t !#$%%&(-~]\\|\\\\\\(?:%s\\)\\|'\\|%s\\|\\(?:%s\\)\\)*\"" nl nonascii escape))
          (string2 (format "'\\(?:[\t !#$%%&(-~]\\|\\\\\\(?:%s\\)\\|\"\\|%s\\|\\(?:%s\\)\\)*'" nl nonascii escape))
          (ident (format "[-]?\\(?:%s\\)\\(?:%s\\)*" nmstart nmchar))
          (unit (format "[-]?\\(?:%s\\)\\(?:%s\\)+" nmstart nmchar))
