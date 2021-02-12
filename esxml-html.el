@@ -219,13 +219,13 @@ e.g.
                                  `(,seperator ,description)))
                            bookmark-list)
                  ordered-p))
-Example
-(setq bookmark-list
-      '(("http://www.emacswiki.org" "Emacs Wiki" "Accept no substitutes")
-        ("http://www.github.com/" "Github")
-        ("http://www.google.com" "Google" "Everyones favorite search engine")))
+;; Example
+;; (setq bookmark-list
+;;       '(("http://www.emacswiki.org" "Emacs Wiki" "Accept no substitutes")
+;;         ("http://www.github.com/" "Github")
+;;         ("http://www.google.com" "Google" "Everyones favorite search engine")))
 
-(esxml-to-xml (esxml-create-bookmark-list bookmark-list ": "))
+;; (esxml-to-xml (esxml-create-bookmark-list bookmark-list ": "))
 
 ;; hint, at this point it may be wise to consider breaking this out as
 ;; a seperate web library.
