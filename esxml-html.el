@@ -33,8 +33,7 @@
 ;; resolve these issues.
 ;;
 ;;; Code:
-(eval-when-compile
-  (require 'cl))
+(require 'cl-lib)
 (require 'esxml)
 (require 'xml)
 (require 'kv)
@@ -182,14 +181,14 @@ e.g.
    (meta 'content-type \"text/html\" t)
    (script \"example-script.js\"))"
   (declare (indent 1))
-  `(letf ,(kvmap-bind (symbol value)
-              `((symbol-function ',symbol) ,value)
-            '((base 'esxml-head-base)
-              (link 'esxml-head-link)
-              (css-link 'esxml-head-css-link)
-              (meta 'esxml-head-meta)
-              (script 'esxml-head-script)
-              (style 'esxml-head-style)))
+  `(cl-letf ,(kvmap-bind (symbol value)
+                 `((symbol-function ',symbol) ,value)
+               '((base 'esxml-head-base)
+                 (link 'esxml-head-link)
+                 (css-link 'esxml-head-css-link)
+                 (meta 'esxml-head-meta)
+                 (script 'esxml-head-script)
+                 (style 'esxml-head-style)))
      (esxml--head ,title ,@body)))
 
 ;;; Some generators for common problems

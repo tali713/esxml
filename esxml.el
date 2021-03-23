@@ -44,7 +44,7 @@
 ;; resolve these issues.
 ;;
 ;;; Code:
-(require 'cl)
+(require 'cl-lib)
 (require 'xml)
 (require 'pcase)
 
@@ -77,7 +77,7 @@ An esxml attribute is a cons of the form (symbol . string)"
   "Converts from cons cell to attribute pair.  Not intended for
 general use."
   (pcase-let ((`(,car . ,cdr) attr))
-    (check-type cdr string)
+    (cl-check-type cdr string)
     (concat (symbol-name car)
             "="
             (prin1-to-string cdr))))
@@ -87,11 +87,11 @@ general use."
 
 See: `attrp'"
   (and (listp attrs)
-       (every (lambda (attr)
-                (and (consp attr)
-                     (symbolp (car attr))
-                     (stringp (cdr attr))))
-              attrs)))
+       (cl-every (lambda (attr)
+                   (and (consp attr)
+                        (symbolp (car attr))
+                        (stringp (cdr attr))))
+                 attrs)))
 
 (defun esxml-validate-form (esxml)
   "A fast esxml validator.  Will error on invalid subparts making
@@ -100,8 +100,8 @@ it suitable for hindsight testing."
         ((< (length esxml) 2)
          (error "%s is too short to be a valid esxml expression" esxml))
         (t (pcase-let ((`(,tag ,attrs . ,body) esxml))
-             (check-type tag symbol)
-             (check-type attrs attrs)
+             (cl-check-type tag symbol)
+             (cl-check-type attrs attrs)
              (mapcar 'esxml-validate-form body)))))
 
 ;; While the following could certainly have been written using format,
@@ -173,13 +173,13 @@ slower and will produce longer output."
     (`(comment nil ,body)
      (concat "<!--" body "-->"))
     (`(,tag ,attrs . ,body)
-     (check-type tag symbol)
-     (check-type attrs attrs)
+     (cl-check-type tag symbol)
+     (cl-check-type attrs attrs)
      (concat "<" (symbol-name tag)
              (when attrs
                (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
              (if body
-                 (concat ">" (if (every 'stringp body)
+                 (concat ">" (if (cl-every 'stringp body)
                                  (mapconcat 'identity body " ")
                                (concat "\n"
                                        (replace-regexp-in-string
@@ -197,9 +197,9 @@ See: http://okmij.org/ftp/Scheme/SXML.html."
   (pcase sxml
     (`(,tag (@ . ,attrs) . ,body)
      `(,tag ,(mapcar (lambda (attr)
-                       (cons (first attr)
-                             (or (second attr)
-                                 (prin1-to-string (first attr)))))
+                       (cons (car attr)
+                             (or (cadr attr)
+                                 (prin1-to-string (car attr)))))
                      attrs)
             ,@(mapcar 'sxml-to-esxml body)))
     (`(,tag . ,body)
@@ -259,7 +259,7 @@ recurse below a match."
   (declare (indent 2))
   (let ((entry (make-symbol "entry")))
     `(mapcar (lambda (,entry)
-               (destructuring-bind ,args ,entry ,sexp))
+               (cl-destructuring-bind ,args ,entry ,sexp))
              ,seq)))
 
 (provide 'esxml)
