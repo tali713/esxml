@@ -27,7 +27,7 @@
 ;; This is a set of convenience functions for generating esxml for
 ;; certain HTML elements.
 ;;
-;; NOTICE: Code base will be trasnitioning to using pcase instead of
+;; NOTICE: Code base will be transitioning to using pcase instead of
 ;; destructuring bind wherever possible.  If this leads to hard to
 ;; debug code, please let me know, and I will do whatever I can to
 ;; resolve these issues.
