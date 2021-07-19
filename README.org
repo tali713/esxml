@@ -98,3 +98,4 @@ also includes tools for working with parsed xml
   - https://github.com/alphapapa/org-web-tools
   - https://github.com/alphapapa/org-books
   - https://github.com/mihaiolteanu/versuri
+  - https://depp.brause.cc/nov.el/
