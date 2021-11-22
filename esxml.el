@@ -81,7 +81,7 @@ general use."
     (cl-check-type cdr string)
     (concat (symbol-name car)
             "="
-            (prin1-to-string cdr))))
+            (prin1-to-string (xml-escape-string cdr)))))
 
 (defun attrsp (attrs)
     "Returns t if attrs is a list of esxml attributes.
@@ -120,7 +120,7 @@ it suitable for hindsight testing."
 (defun esxml--to-xml-recursive (esxml)
   (pcase esxml
     ((pred stringp)
-     esxml)
+     (xml-escape-string esxml))
     (`(comment nil ,body)
      (concat "<!--" body "-->"))
     (`(,tag ,attrs . ,body)
@@ -166,11 +166,11 @@ STRING: if the esxml expression is a string it is returned
 
 (defun pp-esxml-to-xml (esxml)
   "This translates an esxml expresion as `esxml-to-xml' but
-indents it for ease of human readability, it is neccesarrily
+indents it for ease of human readability, it is necessarily
 slower and will produce longer output."
   (pcase esxml
     ((pred stringp)
-     esxml)
+     (xml-escape-string esxml))
     (`(comment nil ,body)
      (concat "<!--" body "-->"))
     (`(,tag ,attrs . ,body)
