@@ -137,13 +137,36 @@ it suitable for hindsight testing."
                "/>")))))
 
 (defun esxml-to-xml (esxml)
-  "This translates an esxml expression, i.e. that which is
-returned by xml-parse-region.  The structure is defined as a
-string or a list where the first element is the tag the second is
+  "This translates an esxml expression, i.e. that which is returned
+by xml-parse-region. The structure is defined as any of the
+following forms:
+
+- A string.
+
+ STRING
+
+STRING: the string it is returned with entities escaped
+
+- A list where the first element is the raw-string symbol and the
+  second is a string.
+
+ (raw-string STRING)
+
+STRING: the string is returned unchanged. This allows for caching
+        of any constant parts, such as headers and footers.
+
+- A list where the first element is the comment symbol and the
+  second is a string.
+
+ (comment STRING)
+
+STRING: the string is embedded in a HTML comment.
+
+- A list where the first element is the tag, the second is
 an alist of attribute value pairs and the remainder of the list
 is 0 or more esxml elements.
 
- (TAG ATTRS &rest BODY) || STRING
+ (TAG ATTRS &rest BODY)
 
 TAG: is the tag and must be a symbol.
 
@@ -157,12 +180,7 @@ VALUE: is the value of the attribute and must be a string.
 BODY: is zero or more esxml expressions.  Having no body forms
       implies that the tag should be self closed.  If there is
       one or more body forms the tag will always be explicitly
-      closed, even if they are the empty string.
-
-STRING: if the esxml expression is a string it is returned
-        unchanged, this allows for caching of any constant parts,
-        such as headers and footers.
-"
+      closed, even if they are the empty string."
   (condition-case nil
       (esxml--to-xml-recursive esxml)
     (error (esxml-validate-form esxml))))
