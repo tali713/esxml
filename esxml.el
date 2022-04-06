@@ -121,6 +121,10 @@ it suitable for hindsight testing."
   (pcase esxml
     ((pred stringp)
      (xml-escape-string esxml))
+    (`(raw-string ,(and (pred stringp) string))
+     string)
+    (`(raw-string ,non-string)
+     (error "raw-string tag used on non-string: %S" non-string))
     (`(comment nil ,body)
      (concat "<!--" body "-->"))
     (`(,tag ,attrs . ,body)
@@ -171,6 +175,10 @@ slower and will produce longer output."
   (pcase esxml
     ((pred stringp)
      (xml-escape-string esxml))
+    (`(raw-string ,(and (pred stringp) string))
+     string)
+    (`(raw-string ,non-string)
+     (error "raw-string tag used on non-string: %S" non-string))
     (`(comment nil ,body)
      (concat "<!--" body "-->"))
     (`(,tag ,attrs . ,body)
