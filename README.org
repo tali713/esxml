@@ -69,15 +69,21 @@ also includes tools for working with parsed xml
 
 * Extracting data from HTML and XML documents with esxml-query.el
   #+BEGIN_SRC emacs-lisp
+    (require 'dom)
+    (require 'esxml-query)
+
     (url-retrieve
      "https://schneierfacts.com/"
      (lambda (status &rest args)
        (let* ((html (libxml-parse-html-region url-http-end-of-headers (point-max)))
               (fact (esxml-query "p.fact" html)))
-         (message "Did you know: %s" (car (esxml-node-children fact))))))
+         (message "Did you know: %s" (car (dom-children fact))))))
   #+END_SRC
 
   #+BEGIN_SRC emacs-lisp
+    (require 'dom)
+    (require 'esxml-query)
+
     (url-retrieve
      "https://www.xkcd.com/rss.xml"
      (lambda (status &rest args)
@@ -85,8 +91,8 @@ also includes tools for working with parsed xml
        (forward-line 1)
        (let* ((xml (libxml-parse-xml-region (point) (point-max)))
               (latest (esxml-query "rss>channel>item" xml))
-              (title (car (esxml-node-children (esxml-query "title" latest))))
-              (link (car (esxml-node-children (esxml-query "link" latest)))))
+              (title (car (dom-children (esxml-query "title" latest))))
+              (link (car (dom-children (esxml-query "link" latest)))))
          (message "%S: %s" title link))))
   #+END_SRC
 
