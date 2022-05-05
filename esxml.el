@@ -122,7 +122,7 @@ it suitable for hindsight testing."
     ((pred stringp)
      (xml-escape-string esxml))
     (`(comment nil ,body)
-     (concat "<!--" body "-->"))
+     (concat "<!-- " body " -->"))
     (`(,tag ,attrs . ,body)
      ;; code goes here to catch invalid data.
      (concat "<" (symbol-name tag)
@@ -172,7 +172,7 @@ slower and will produce longer output."
     ((pred stringp)
      (xml-escape-string esxml))
     (`(comment nil ,body)
-     (concat "<!--" body "-->"))
+     (concat "<!-- " body " -->"))
     (`(,tag ,attrs . ,body)
      (cl-check-type tag symbol)
      (cl-check-type attrs attrs)
