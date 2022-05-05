@@ -196,6 +196,8 @@ slower and will produce longer output."
   "Translates sxml to esxml so the common standard can be used.
 See: http://okmij.org/ftp/Scheme/SXML.html."
   (pcase sxml
+    (`(*COMMENT* ,body)
+     `(comment nil ,body))
     (`(,tag (@ . ,attrs) . ,body)
      `(,tag ,(mapcar (lambda (attr)
                        (cons (car attr)
