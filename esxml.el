@@ -224,6 +224,8 @@ See: http://okmij.org/ftp/Scheme/SXML.html. Additionally,
   (pcase sxml
     (`(*RAW-STRING* ,body)
      `(raw-string ,body))
+    (`(raw-string ,body)
+     `(raw-string ,body))
     (`(*COMMENT* ,body)
      `(comment nil ,body))
     (`(,tag (@ . ,attrs) . ,body)
