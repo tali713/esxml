@@ -218,12 +218,8 @@ slower and will produce longer output."
 
 (defun sxml-to-esxml (sxml)
   "Translates sxml to esxml so the common standard can be used.
-See: http://okmij.org/ftp/Scheme/SXML.html. Additionally,
-(*RAW-STRING* \"string\") is translated to (raw-string
-\"string\")."
+See: http://okmij.org/ftp/Scheme/SXML.html."
   (pcase sxml
-    (`(*RAW-STRING* ,body)
-     `(raw-string ,body))
     (`(*COMMENT* ,body)
      `(comment nil ,body))
     (`(,tag (@ . ,attrs) . ,body)
