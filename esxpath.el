@@ -1,8 +1,8 @@
 ;;; esxpath.el --- testing phase -*- lexical-binding: t -*-
 
-;; Copyright (C) 2013  Evan Izaksonas-Smith
+;; Copyright (C) 2013  Vanya Izaksonas-Smith
 
-;; Author: Evan Izaksonas-Smith <tali713@rastafy>
+;; Author: Vanya Izaksonas-Smith <tali713@rastafy>
 ;; Keywords: extensions, lisp
 
 ;; This program is free software; you can redistribute it and/or modify
