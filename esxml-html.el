@@ -1,8 +1,8 @@
 ;;; esxml-html.el --- HTML convenience functions for esxml
 ;; Copyright (C) 2012
 
-;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
-;; Maintainer: Evan Izaksonas-Smith
+;; Author: Vanya Izaksonas-Smith <izak0002 at umn dot edu>
+;; Maintainer: Vanya Izaksonas-Smith
 ;; Created: 15th August 2012
 ;; Version: 0.3.0
 ;; Package-Requires: ((kv "0.0.5"))

@@ -1,8 +1,8 @@
 ;;; esxml.el --- Library for working with xml via esxml and sxml
 ;; Copyright (C) 2012
 
-;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
-;; Maintainer: Evan Izaksonas-Smith
+;; Author: Vanya Izaksonas-Smith <izak0002 at umn dot edu>
+;; Maintainer: Vanya Izaksonas-Smith
 ;; Created: 15th August 2012
 ;; Version: 0.3.2
 ;; Keywords: tools, lisp, comm
