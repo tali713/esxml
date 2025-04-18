@@ -64,15 +64,15 @@ data, for example, a database."
     `(let ((,fields
             (mapcar
              (lambda (field-arg)
-               (cl-destructuring-bind ,esxml-form-field-defn field-arg)
-               (list name
-                     :type type
-                     :regex regex
-                     :check-failure check-failure
-                     :type-check-failure type-check-failure
-                     :html html
-                     :db-check db-check
-                     :db-key db-key))
+               (cl-destructuring-bind ,esxml-form-field-defn field-arg
+                 (list name
+                       :type type
+                       :regex regex
+                       :check-failure check-failure
+                       :type-check-failure type-check-failure
+                       :html html
+                       :db-check db-check
+                       :db-key db-key)))
              (quote ,field-args))))
        (list :db (quote ,db)
              :db-key (quote ,db-key)
