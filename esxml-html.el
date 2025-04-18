@@ -71,7 +71,7 @@ VALUE is optional, if it's supplied whatever is supplied is used.
   `(textarea ((name . ,name)
               (placeholder . ,name))
              ;; textareas require a body all the time
-             ,@(if content (list content) "")))
+             ,(or content "")))
 
 (defun esxml-listify (bodys &optional ordered-p item-attrs)
   "Transforms a list of esxml body forms into an unordered HTML list.
