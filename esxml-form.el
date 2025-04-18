@@ -163,14 +163,14 @@ field-value and validation error message if it fails."
                               (let ((check-msg
                                      (plist-get field-plist :check-failure)))
                                 (if (listp check-msg)
-                              (car (cdr (assoc last-check check-msg)))
-                                  check-msg))))))
+                              (car (cdr (assoc check-msg last-check)))
+                              check-msg))))))
       (cond
        ((and errors (functionp onerror))
-         (funcall onerror params errors))
-        ((and (not errors) (functionp onsuccess))
-         (funcall onsuccess params))
-        (t errors)))))
+        (funcall onerror params errors))
+       ((and (not errors) (functionp onsuccess))
+        (funcall onsuccess params))
+       (t errors)))))
 
 (cl-defun esxml-field-set/label-style (&key html name value err)
   (esxml-label
