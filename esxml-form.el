@@ -6,7 +6,7 @@
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Keywords: data, lisp
 ;; Created: 23rd September 2012
-;; Package-Requires: ((kv "0.0.7")(esxml "0.0.7")(db "0.0.1"))
+;; Package-Requires: ((esxml "0.0.7") (db "0.0.1"))
 ;; Version: 0.0.1
 
 ;; This program is free software; you can redistribute it and/or modify
