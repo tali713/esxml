@@ -225,8 +225,7 @@ specified in https://drafts.csswg.org/cssom/#the-css.escape()-method."
 (defun esxml--parse-css-identifier (string)
   ;; https://www.w3.org/TR/css-syntax-3/#consume-string-token
   (let* ((code-points (string-to-list string))
-         chars
-         token)
+         chars)
     (while code-points
       (let ((char (pop code-points)))
         (if (= char ?\\)
