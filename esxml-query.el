@@ -1,4 +1,4 @@
-;;; esxml-query.el --- select esxml nodes jQuery-style
+;;; esxml-query.el --- select esxml nodes jQuery-style  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2017 Vasilij Schneidermann <mail@vasilij.de>
 
