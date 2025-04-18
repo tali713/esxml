@@ -280,12 +280,12 @@ HANDLER is a function that takes the DATA from the POST that has
 been validated by the FORM for saving it.
 
 EXTRA-DATA is passed to the PAGE as extra `replacements'."
-  (flet ((send (&optional data errors)
-           (let ((esxml (esxml-field-set->esxml form data errors)))
-             (elnode-send-file
-              httpcon page
-              :replacements `(("form" . ,(esxml-to-xml esxml))
-                              ,@extra-data)))))
+  (cl-flet ((send (&optional data errors)
+              (let ((esxml (esxml-field-set->esxml form data errors)))
+                (elnode-send-file
+                 httpcon page
+                 :replacements `(("form" . ,(esxml-to-xml esxml))
+                                 ,@extra-data)))))
     (elnode-method httpcon
       (GET (send))
       (POST
