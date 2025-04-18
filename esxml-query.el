@@ -76,6 +76,9 @@
 ;; well, the level 3 one has a buggy lexer section whereas level 4
 ;; omits crucial parser definitions, so both have to be used...
 
+;; TODO: rename to dom-query-selector/-query-selector-all
+;; TODO: prefix everything with dom-
+
 ;; TODO: support :not
 (defvar esxml--css-selector-token-matchers
   (let* ((h "[0-9a-f]")
@@ -148,6 +151,8 @@
 (defvar esxml--token-stream)
 
 ;; TODO: support :not
+;; TODO: parse arithmetics with shunting yard or pratt
+;; NOTE: http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
 ;; css-selector:
 ;;   css-selector-list;
 ;; css-selector-list:
@@ -528,7 +533,7 @@ argument."
 
 ;;; tree traversal
 
-;; TODO: these helpers should be part of esxml.el
+;; TODO: why branch?
 (defun esxml-branch-p (node)
   "Non-nil if NODE refers to an esxml branch."
   (and (listp node)
@@ -536,6 +541,7 @@ argument."
        (symbolp (car node))
        (listp (cadr node))))
 
+;; TODO: these helpers should be deprecated in favor of dom.el
 (defun esxml-node-tag (node)
   "Returns the tag of NODE if available."
   (and (esxml-branch-p node)
