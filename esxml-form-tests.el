@@ -1,7 +1,8 @@
 ;; tests for field-set
-(require 'kv)
 (require 'db)
 (require 'uuid)
+
+(require 'esxml-form)
 
 (defvar my-test-db nil
   "Test database variable.")
@@ -54,8 +55,8 @@
   (esxml-form-field-set--test-defaults
    (should (listp (esxml-form-fields fs)))
    (should (equal '(username key)
-                  (kvalist->keys (esxml-form-fields fs))))
-   (should (listp (aget (esxml-form-fields fs) 'username)))))
+                  (mapcar #'car (esxml-form-fields fs))))
+   (should (listp (cdr (assoc (esxml-form-fields fs) 'username))))))
 
 (ert-deftest esxml--field-check ()
   (esxml-form-field-set--test-defaults

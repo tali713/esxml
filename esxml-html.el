@@ -5,7 +5,7 @@
 ;; Maintainer: Vanya Izaksonas-Smith
 ;; Created: 15th August 2012
 ;; Version: 0.3.0
-;; Package-Requires: ((kv "0.0.5"))
+;; Package-Requires: ()
 ;; Keywords: tools, lisp, comm
 ;; Description: esxml convenience functions for certain HTML elements
 ;;
@@ -36,7 +36,6 @@
 (require 'cl-lib)
 (require 'esxml)
 (require 'xml)
-(require 'kv)
 (require 'pcase)
 
 (defun esxml-link (url &rest body)
@@ -82,9 +81,11 @@ instead creates an ordered list.  If ITEM-ATTRS is non-nil it
 specifies attributes to apply to each item.  ITEM-ATTRS must be
 an alist satisfying `attrsp'."
   `(,(if ordered-p 'ol 'ul) ()
-    ,@(kvmap-bind item
-          `(li () ,@item)
-        bodys)))
+    ,@(mapcar
+       (lambda (body)
+         (cl-destructuring-bind item body
+           `(li nil ,@item)))
+       bodys)))
 
 (defun esxml-head-base (url &optional target)
   "The HTML <base> element.
@@ -181,14 +182,16 @@ e.g.
    (meta 'content-type \"text/html\" t)
    (script \"example-script.js\"))"
   (declare (indent 1))
-  `(cl-letf ,(kvmap-bind (symbol value)
-                 `((symbol-function ',symbol) ,value)
-               '((base 'esxml-head-base)
-                 (link 'esxml-head-link)
-                 (css-link 'esxml-head-css-link)
-                 (meta 'esxml-head-meta)
-                 (script 'esxml-head-script)
-                 (style 'esxml-head-style)))
+  `(cl-letf ,(mapcar
+              (lambda (definition)
+                (cl-destructuring-bind (symbol value) definition
+                  `((symbol-function ',symbol) ,value)))
+              '((base 'esxml-head-base)
+                (link 'esxml-head-link)
+                (css-link 'esxml-head-css-link)
+                (meta 'esxml-head-meta)
+                (script 'esxml-head-script)
+                (style 'esxml-head-style)))
      (esxml--head ,title ,@body)))
 
 ;;; Some generators for common problems
@@ -211,13 +214,15 @@ e.g.
 ;;           (\"http://www.github.com/\" \"Github\")
 ;;           (\"http://www.google.com\" \"Google\" \"Everyones favorite search engine\")))
 ;; 
-;;   (esxml-to-xml (esxml-create-bookmark-list bookmark-list \": \"))"
-;;   (esxml-listify (kvmap-bind (url name &optional description)
-;;                            `(,(esxml-link url name)
-;;                              ,@(when description
-;;                                  `(,seperator ,description)))
-;;                            bookmark-list)
-;;                  ordered-p))
+;;   (esxml-listify (mapcar
+;;                   (lambda (bookmark)
+;;                     (cl-destructuring-bind (url name &optional description)
+;;                         bookmark
+;;                       `(,(esxml-link url name)
+;;                         ,@(when description
+;;                             `(,seperator ,description)))))
+;;                   bookmark-list)
+;;                  ordered-p)
 ;; Example
 ;; (setq bookmark-list
 ;;       '(("http://www.emacswiki.org" "Emacs Wiki" "Accept no substitutes")
