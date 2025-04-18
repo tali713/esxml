@@ -1,5 +1,0 @@
-(esxml
- :version "0.3.7"
- :doc "Handle HTML with lists."
- :requires ((kv "0.0.5") (cl-lib "0.5"))
- :files ("esxml.el" "esxml-html.el" "esxml-form.el" "esxml-query.el"))
