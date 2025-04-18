@@ -33,6 +33,7 @@
 
 (require 'cl-lib)
 (require 'esxml)
+(require 'esxml-html)
 
 (defconst esxml-form-field-defn
   '(name
