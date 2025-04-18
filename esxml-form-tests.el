@@ -111,20 +111,26 @@
     (equal
      '(fieldset ()
        (label ()
-        "username: "
-        (input ((name . "username")
-                (type . "text"))))
+        (span () "username: ")
+        (div ()
+         (input ((name . "username")
+                 (type . "text")
+                 (placeholder . "username")))))
        (label ()
-        "key: "
-        (textarea ((name . "key")))))
+        (span () "key: ")
+        (div () (textarea ((name . "key")
+                           (placeholder . "key"))
+                          ""))))
      (esxml-field-set->esxml fs)))
    ;; Test it all renders properly
    (should
     (equal
      (concat
       "<fieldset>"
-      "<label>username: <input name=\"username\" type=\"text\"/></label>"
-      "<label>key: <textarea name=\"key\"/></label>"
+      "<label><span>username: </span><div>"
+      "<input name=\"username\" type=\"text\" placeholder=\"username\"/></div></label>"
+      "<label><span>key: </span><div>"
+      "<textarea name=\"key\" placeholder=\"key\"></textarea></div></label>"
       "</fieldset>")
      (esxml-to-xml (esxml-field-set->esxml fs))))
    ;; Test the structure with values
@@ -135,14 +141,19 @@
       (equal
        '(fieldset ()
          (label ()
-          "username: "
-          (input ((name . "username")
-                  (type . "text")
-                  (value . "test"))))
+          (span () "username: ")
+          (div ()
+            (input ((name . "username")
+                    (type . "text")
+                    (placeholder . "username")
+                    (value . "test")))))
          (label ()
-          "key: "
-          (textarea ((name . "key")))
-          (div ((class . "error")) "the content of the field was wrong")))
+          (span () "key: ")
+          (div ()
+            (textarea ((name . "key")
+                       (placeholder . "key"))
+                      "")
+            (div ((class . "error")) "the content of the field was wrong"))))
        (esxml-field-set->esxml fs params errors))))))
 
 (ert-deftest esxml-form-save ()
