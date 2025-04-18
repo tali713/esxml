@@ -61,7 +61,7 @@
 (ert-deftest esxml--field-check ()
   (esxml-form-field-set--test-defaults
    (let* ((fields (esxml-form-fields fs))
-          (username-field (aget fields 'username)))
+          (username-field (cdr (assoc fields 'username))))
      (should-not (esxml--field-check username-field "NicFerrier"))
      (should
       (eq :regex

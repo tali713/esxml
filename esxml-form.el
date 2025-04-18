@@ -239,8 +239,8 @@ indicate the style of form output used."
       ()
       ,@(esxml-form-bind
          (let* ((symname (symbol-name name))
-                (value (aget params symname))
-                (err (aget errors name)))
+                (value (cdr (assoc params symname)))
+                (err (cdr (assoc errors name))))
            (funcall
             (cl-case form-style
               (:label 'esxml-field-set/label-style)
@@ -259,7 +259,7 @@ into the DB."
   (let ((db (esxml-form-db form))
         (db-key (esxml-form-db-key form)))
     (when (and db db-key)
-      (let ((key-value (aget params db-key))
+      (let ((key-value (cdr (assoc params db-key)))
             (form-data
              (esxml-form-bind (assoc (symbol-name name) params) form)))
         (db-put key-value
