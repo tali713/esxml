@@ -138,9 +138,9 @@ that is there is correclty specified.
 
 Returns the empty list when it passes and an alist of field-name,
 field-value and validation error message if it fails."
-  (cl-flet ((subs-all (new old lst)
-              (let ((l (lambda (e) (if (listp e) (subs-all new old e) e))))
-                (cl-substitute new old (mapcar l lst)))))
+  (cl-labels ((subs-all (new old lst)
+                (let ((l (lambda (e) (if (listp e) (subs-all new old e) e))))
+                  (cl-substitute new old (mapcar l lst)))))
     (let* (last-check
            (db (esxml-form-db fs))
            (fields-set (esxml-form-fields fs))
