@@ -108,7 +108,7 @@ data, for example, a database."
 
 Return the type of validation failure or `nil' for no failure.
 
-The tyoe of validation failure can be used as a key into the
+The type of validation failure can be used as a key into the
 field's `:check-failure' alist (if it is a list).  This means the
 form can respond differently about database validation or other
 types of validation."
@@ -134,7 +134,7 @@ types of validation."
   "Check field set FS against the PARAMS values.
 
 Checks that ALL the required fields are there and that any field
-that is there is correclty specified.
+that is there is correctly specified.
 
 Returns the empty list when it passes and an alist of field-name,
 field-value and validation error message if it fails."
