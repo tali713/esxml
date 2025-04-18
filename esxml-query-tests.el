@@ -1,3 +1,4 @@
+(require 'cl-lib)
 (require 'esxml)
 (require 'esxml-query)
 (require 'ert)
