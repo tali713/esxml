@@ -148,7 +148,8 @@ field-value and validation error message if it fails."
             (cl-loop with field-value
                      for (field-name . field-plist) in fields-set
                      do
-                     (setq field-value (cdr (assq field-name params)))
+                     (setq field-value (cdr (assoc field-name params
+                                                   #'string-equal)))
                      when
                      (setq
                       last-check
