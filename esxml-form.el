@@ -164,7 +164,7 @@ field-value and validation error message if it fails."
                               (let ((check-msg
                                      (plist-get field-plist :check-failure)))
                                 (if (listp check-msg)
-                              (car (cdr (assoc check-msg last-check)))
+                              (car (cdr (assoc last-check check-msg)))
                               check-msg))))))
       (cond
        ((and errors (functionp onerror))
